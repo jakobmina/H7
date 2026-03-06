@@ -7,9 +7,13 @@ para ajustar estimulación en tiempo real basado en análisis de alta precisión
 Mandato Metripléxico:
   d_symp = innovación O_n (movimiento conservativo del loop)
   d_metr = corrección H7 (relajación hacia el atractor de baja latencia)
+
+Bridge:
+  Cada tick escribe a cl1_session.sqlite (WAL) → leído por streamlit_monitor.py
 """
 
 import cl
+from cl1_db import CL1Database
 import time
 import numpy as np
 import mpmath
@@ -147,7 +151,11 @@ def adaptive_loop_test():
     h7            = H7AdaptiveController()
 
     print("🚀 Starting Adaptive CL Loop — QuoreMindHP + H7")
-    print(f"   Target: {TICKS_PER_SECOND} Hz | {RUN_FOR_SECONDS}s | {RUN_FOR_TICKS} ticks\n")
+    print(f"   Target: {TICKS_PER_SECOND} Hz | {RUN_FOR_SECONDS}s | {RUN_FOR_TICKS} ticks")
+    print("   Bridge: cl1_session.sqlite (WAL) → streamlit_monitor.py\n")
+
+    db = CL1Database()
+    db.new_session(TICKS_PER_SECOND, RUN_FOR_SECONDS)
 
     with cl.open() as neurons:
         for tick in neurons.loop(
@@ -159,6 +167,10 @@ def adaptive_loop_test():
             loop_times_ns[tick.iteration] = t_now
 
             # ── Análisis Metripléxico por tick ──────────────────────────────
+            loop_dur_us = None
+            L_symp = L_metr = prob_b = None
+            action = "maintain"
+
             if tick.iteration > 0:
                 loop_dur_us = (t_now - loop_times_ns[tick.iteration - 1]) / 1_000.0
                 spikes_now  = len(tick.analysis.spikes)
@@ -167,9 +179,17 @@ def adaptive_loop_test():
                 prob_b         = h7.analyze_tick(loop_dur_us, spikes_now)
                 action         = h7.decide(prob_b)
 
+                if action != "maintain":
+                    db.write_h7_event(
+                        event_type  = action,
+                        description = f"tick={tick.iteration} dur={loop_dur_us:.1f}µs spikes={spikes_now}",
+                        value       = float(prob_b),
+                    )
+
             # ── Estimulación Adaptativa ──────────────────────────────────────
-            spikes_now = len(tick.analysis.spikes)
+            spikes_now  = len(tick.analysis.spikes)
             spike_count += spikes_now
+            stim_fired  = False
 
             if spikes_now > 5:
                 try:
@@ -180,13 +200,30 @@ def adaptive_loop_test():
                             h7.stim_dur_us,  h7.stim_amp_ua,
                         ),
                     )
+                    stim_fired = True
                 except Exception as e:
                     if "Skipped stim" in str(e):
                         skipped_stims += 1
                     else:
                         print(f"  Stim error: {e}")
 
+            # ── Escribir tick a SQLite ────────────────────────────────────────
+            db.write_tick(
+                ts_ns           = t_now,
+                loop_dur_us     = loop_dur_us,
+                spike_count     = spikes_now,
+                stim_fired      = stim_fired,
+                prob_bottleneck = float(prob_b) if prob_b is not None else None,
+                l_symp          = float(L_symp) if L_symp is not None else None,
+                l_metr          = float(L_metr) if L_metr is not None else None,
+                stim_dur_us     = h7.stim_dur_us,
+                stim_amp_ua     = h7.stim_amp_ua,
+            )
+
     # ─── Informe Final ─────────────────────────────────────────────────────────
+    db.finalize_session(skipped_stims=skipped_stims, total_spikes=spike_count)
+    db.close()
+
     intervals_us = np.diff(loop_times_ns) / 1_000.0
     percentiles  = [(p, np.percentile(intervals_us, p)) for p in PERCENTILES]
     stats        = h7.final_stats()

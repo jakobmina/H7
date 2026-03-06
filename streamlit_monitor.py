@@ -1,205 +1,249 @@
+"""
+streamlit_monitor.py — CL1 Real-Time Monitor
+
+Lee datos reales del hardware CL1 desde cl1_session.sqlite (WAL).
+Muestra: spikes/tick, latencia de loop, P(bottleneck), L_symp vs L_metr,
+eventos H7, y todas las estadísticas de sesión en tiempo real.
+
+Modo simulación: si no hay sesión CL1 activa, corre la simulación DIT local.
+"""
+
 import streamlit as st
 import numpy as np
 import time
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from pathlib import Path
+from cl1_db import CL1Reader
 
 # ─── Page Config ───────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="QuoreMind DIT Monitor",
+    page_title="CL1 Neural Monitor",
     page_icon="🧠",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 # ─── DIT Constants ─────────────────────────────────────────────────────────────
-PHI = (1 + np.sqrt(5)) / 2
-DRIFT_072 = 7.0 - (2 * np.pi)
-
-# ─── Sidebar Controls ──────────────────────────────────────────────────────────
-with st.sidebar:
-    st.markdown("## 🧠 QuoreMind DIT Monitor")
-    st.markdown("**Metriplectic Engine v1.0**")
-    st.divider()
-
-    st.markdown("### ⚙️ Simulation Parameters")
-    total_cycles  = st.slider("Total Cycles",      min_value=100, max_value=2000, value=400, step=50)
-    threshold     = st.slider("Phase Threshold",   min_value=0.5, max_value=5.0,  value=2.0, step=0.1)
-    noise_sigma   = st.slider("Noise σ",           min_value=0.0, max_value=0.5,  value=0.05, step=0.01)
-    sim_speed     = st.slider("Update Interval (cycles)", min_value=5, max_value=50, value=10, step=5)
-    st.divider()
-
-    st.markdown("### ℹ️ DIT Constants")
-    st.metric("φ (Golden Ratio)", f"{PHI:.6f}")
-    st.metric("DRIFT_072", f"{DRIFT_072:.6f}")
-    st.metric("THRESHOLD", f"{threshold:.2f}")
-
-    run_sim = st.button("▶ Run Simulation", type="primary", use_container_width=True)
-    stop_sim = st.button("⏹ Stop", use_container_width=True)
+PHI        = (1 + np.sqrt(5)) / 2
+DRIFT_072  = 7.0 - (2 * np.pi)
+DIT_CYAN   = "#00f2ff"
+DIT_GREEN  = "#00ff41"
+DIT_RED    = "#ff3e3e"
+DIT_ORANGE = "#f39c12"
 
 # ─── Custom CSS ────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
     .main { background-color: #0d0d0d; }
     .stMetric label { color: #00f2ff !important; font-weight: bold; }
-    .stMetric div[data-testid="stMetricValue"] { color: #00ff41 !important; font-size: 1.8rem !important; }
-    div[data-testid="stMetricDelta"] { font-size: 0.9rem; }
-    .block-container { padding-top: 1rem; }
-    h1 { color: #00f2ff !important; text-shadow: 0 0 10px #00f2ff44; }
+    .stMetric div[data-testid="stMetricValue"] { color: #00ff41 !important; font-size: 1.6rem !important; }
+    h1, h2 { color: #00f2ff !important; text-shadow: 0 0 8px #00f2ff44; }
     .stSidebar { background-color: #111827; }
+    .block-container { padding-top: 1rem; }
+    .stAlert { border-radius: 8px; }
 </style>
 """, unsafe_allow_html=True)
 
+# ─── Sidebar ───────────────────────────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("## 🧠 CL1 Neural Monitor")
+    st.markdown("**QuoreMindHP + H7 Adaptive Loop**")
+    st.divider()
+
+    mode = st.radio("Modo", ["🔴 CL1 Hardware (live)", "🟡 Simulación DIT"], index=0)
+    refresh_s = st.slider("Auto-refresh (s)", 1, 10, 2)
+    n_ticks   = st.slider("Ticks visibles", 100, 2000, 500, step=100)
+
+    st.divider()
+    st.markdown("### ℹ️ Constantes")
+    st.metric("φ", f"{PHI:.6f}")
+    st.metric("DRIFT_072", f"{DRIFT_072:.6f}")
+
+    st.divider()
+    st.caption("Loop: `adaptive_cl_loop.py`")
+    st.caption("Bridge: `cl1_session.sqlite` (WAL)")
+
 # ─── Header ────────────────────────────────────────────────────────────────────
-st.markdown("# 🧠 QuoreMind DIT Phase Stability Monitor")
-st.markdown("*Metriplectic Closed-Loop | $d_{symp} = O_n$ (Áureo) | $d_{metr}$ = DRIFT_072 correction*")
-st.divider()
+st.markdown("# 🧠 CL1 Neural Monitor — Spike & Loop Analysis")
 
-# ─── Metric Row ────────────────────────────────────────────────────────────────
-col1, col2, col3, col4, col5 = st.columns(5)
-metric_cycle       = col1.metric("Cycle",            "—")
-metric_stability   = col2.metric("Stability Index",  "—")
-metric_outliers    = col3.metric("Outliers",         "—")
-metric_corrections = col4.metric("Corrections",      "—")
-metric_accumulator = col5.metric("Accumulator",      "—")
+# ─── Helper: Simulation DIT ────────────────────────────────────────────────────
+def sim_dit_ticks(n: int) -> pd.DataFrame:
+    """Genera ticks simulados con el Operador Áureo para demo sin hardware."""
+    data = []
+    acc = 0.0
+    for i in range(1, n + 1):
+        innovation = np.cos(np.pi * i) * np.cos(np.pi * PHI * i)
+        acc += innovation + np.random.normal(0, 0.05)
+        is_out = abs(acc) > 2.0
+        if is_out or i % 7 == 0:
+            acc *= DRIFT_072 / 2.0
+        data.append({
+            "loop_dur_us":     1000 + np.random.normal(0, 40),
+            "spike_count":     int(max(0, np.random.poisson(3))),
+            "stim_fired":      1 if np.random.random() < 0.04 else 0,
+            "prob_bottleneck": max(0, min(1, 0.1 + abs(acc) * 0.05)),
+            "l_symp":          innovation,
+            "l_metr":          -abs(acc) * (DRIFT_072 / 2.0),
+        })
+    return pd.DataFrame(data)
 
-st.divider()
 
-# ─── Charts ────────────────────────────────────────────────────────────────────
-chart_col, stats_col = st.columns([3, 1])
-with chart_col:
-    phase_chart = st.empty()
-with stats_col:
-    st.markdown("#### 📊 Live Stats")
-    stats_table = st.empty()
-    lagrangian_card = st.empty()
+# ════════════════════════════════════════════════════════════════════
+#  MODO CL1 HARDWARE
+# ════════════════════════════════════════════════════════════════════
+if "hardware" in mode:
+    reader = CL1Reader()
+    status = reader.session_status()
 
-# ─── Simulation Core ───────────────────────────────────────────────────────────
-def compute_lagrangian(i, accumulator, threshold):
-    L_symp = np.cos(np.pi * i) * np.cos(np.pi * PHI * i)
-    L_metr = -abs(accumulator) * (DRIFT_072 / threshold)
-    return L_symp, L_metr
+    # Status banner
+    if status == "running":
+        st.success("🔴 **CL1 hardware ACTIVO** — Leyendo datos en tiempo real")
+    elif status == "done":
+        st.info("✅ Sesión completada — mostrando datos históricos")
+    else:
+        st.warning("⏳ Esperando sesión CL1... Ejecuta `python adaptive_cl_loop.py`")
 
-def run_simulation(total_cycles, threshold, noise_sigma, sim_speed):
-    accumulator = 0.0
-    history     = []
-    outliers    = []
-    corrections = 0
-    L_symp_hist = []
-    L_metr_hist = []
+    # Metric row
+    summary = reader.get_summary()
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
+    c1.metric("Total Ticks",    summary.get("total_ticks", "—"))
+    c2.metric("Total Spikes",   summary.get("total_spikes", "—"))
+    c3.metric("Stims Fired",    summary.get("stim_count", "—"))
+    c4.metric("Skipped Stims",  summary.get("skipped_stims", "—"))
+    c5.metric("Mean Latency",   f"{summary.get('mean_dur_us', 0):.1f} µs"  if summary.get("mean_dur_us") else "—")
+    c6.metric("Mean P(bottleneck)", f"{summary.get('mean_prob_bottleneck', 0):.3f}" if summary.get("mean_prob_bottleneck") else "—")
 
-    for i in range(1, total_cycles + 1):
-        L_symp, L_metr = compute_lagrangian(i, accumulator, threshold)
-        L_symp_hist.append(L_symp)
-        L_metr_hist.append(L_metr)
+    st.divider()
 
-        accumulator += L_symp + np.random.normal(0, noise_sigma)
-        is_outlier = abs(accumulator) > threshold
+    # Fetch ticks
+    ticks = reader.get_recent_ticks(n_ticks)
+    if not ticks:
+        st.info("Sin datos aún. Inicia el loop CL1.")
+    else:
+        df = pd.DataFrame(ticks)
 
-        if is_outlier or (i % 7 == 0):
-            accumulator *= (DRIFT_072 / threshold)
-            corrections += 1
-            if is_outlier:
-                outliers.append((i, accumulator))
-
-        history.append(accumulator)
-        stability_index = 100 * (1 - (len(outliers) / i))
-
-        # ── Update UI every sim_speed cycles ──
-        if i % sim_speed == 0 or i == total_cycles:
-            # ── Plotly Chart ──
+        # ── Gráficas principales ─────────────────────────────────────────────
+        chart_col, event_col = st.columns([3, 1])
+        with chart_col:
             fig = make_subplots(
-                rows=2, cols=1, shared_xaxes=True,
-                row_heights=[0.65, 0.35],
-                subplot_titles=("Phase Accumulator (Laminar Flow)", "Lagrangian Components L_symp vs L_metr")
+                rows=3, cols=1, shared_xaxes=True,
+                row_heights=[0.40, 0.30, 0.30],
+                subplot_titles=(
+                    "Spikes por Tick + Estimulaciones",
+                    "Latencia del Loop (µs) + P(bottleneck)",
+                    "Lagrangiano: L_symp (conservativo) vs L_metr (disipativo)"
+                ),
             )
+            x = list(range(len(df)))
 
-            x = list(range(len(history)))
-
-            # Phase line
-            fig.add_trace(go.Scatter(
-                x=x, y=history,
-                name="Accumulator",
-                line=dict(color="#00f2ff", width=1.5),
-                fill='tozeroy', fillcolor='rgba(0,242,255,0.07)'
+            # Panel 1: Spikes
+            fig.add_trace(go.Bar(
+                x=x, y=df["spike_count"],
+                name="Spikes/tick", marker_color=DIT_CYAN, opacity=0.8
             ), row=1, col=1)
 
-            # Thresholds
-            fig.add_hline(y=threshold,  line_dash="dash", line_color="#ff3e3e", opacity=0.5, row=1, col=1)
-            fig.add_hline(y=-threshold, line_dash="dash", line_color="#ff3e3e", opacity=0.5, row=1, col=1)
-
-            # Outlier markers
-            if outliers:
-                ox, oy = zip(*outliers)
+            # Stims fired as markers
+            stim_idx = df[df["stim_fired"] == 1].index.tolist()
+            if stim_idx:
                 fig.add_trace(go.Scatter(
-                    x=list(ox), y=list(oy), mode='markers',
-                    name="Outliers",
-                    marker=dict(color="#ff3e3e", size=7, symbol="x")
+                    x=stim_idx, y=df.loc[stim_idx, "spike_count"],
+                    mode="markers", name="Stim fired",
+                    marker=dict(color=DIT_GREEN, size=8, symbol="triangle-up")
                 ), row=1, col=1)
 
-            # Lagrangian
+            # Panel 2: Latencia + P(bottleneck)
             fig.add_trace(go.Scatter(
-                x=x, y=L_symp_hist, name="L_symp (conservative)",
-                line=dict(color="#00ff41", width=1.2)
+                x=x, y=df["loop_dur_us"],
+                name="Loop dur (µs)", line=dict(color=DIT_ORANGE, width=1.2)
             ), row=2, col=1)
-            fig.add_trace(go.Scatter(
-                x=x, y=L_metr_hist, name="L_metr (dissipative)",
-                line=dict(color="#f39c12", width=1.2)
-            ), row=2, col=1)
+            fig.add_hline(y=1000, line_dash="dot", line_color="#ffffff", opacity=0.3, row=2, col=1)
+            fig.add_hline(y=1500, line_dash="dash", line_color=DIT_RED, opacity=0.5, row=2, col=1)
+
+            if "prob_bottleneck" in df.columns:
+                fig.add_trace(go.Scatter(
+                    x=x, y=df["prob_bottleneck"] * 1000,
+                    name="P(bottleneck)×1000", line=dict(color=DIT_RED, width=1.2, dash="dot"),
+                ), row=2, col=1)
+
+            # Panel 3: Lagrangiano
+            if "l_symp" in df.columns:
+                fig.add_trace(go.Scatter(
+                    x=x, y=df["l_symp"],
+                    name="L_symp (conservative)", line=dict(color=DIT_GREEN, width=1.2)
+                ), row=3, col=1)
+            if "l_metr" in df.columns:
+                fig.add_trace(go.Scatter(
+                    x=x, y=df["l_metr"],
+                    name="L_metr (dissipative)", line=dict(color=DIT_RED, width=1.2)
+                ), row=3, col=1)
 
             fig.update_layout(
-                height=520,
-                paper_bgcolor="#0d0d0d",
-                plot_bgcolor="#111827",
+                height=600, paper_bgcolor="#0d0d0d", plot_bgcolor="#111827",
                 font=dict(color="#cce6ff"),
-                legend=dict(orientation="h", y=-0.08, font=dict(size=10)),
+                legend=dict(orientation="h", y=-0.06, font=dict(size=10)),
                 margin=dict(l=30, r=10, t=40, b=30),
             )
             fig.update_xaxes(showgrid=True, gridcolor="#1e293b")
             fig.update_yaxes(showgrid=True, gridcolor="#1e293b")
+            st.plotly_chart(fig, use_container_width=True)
 
-            phase_chart.plotly_chart(fig, use_container_width=True)
+        # ── H7 Events ────────────────────────────────────────────────────────
+        with event_col:
+            st.markdown("#### ⚡ Eventos H7")
+            events = reader.get_h7_events(30)
+            if events:
+                for ev in reversed(events[-15:]):
+                    color = DIT_RED if ev["event_type"] == "reduce_complexity" else DIT_GREEN
+                    st.markdown(
+                        f"<span style='color:{color}'>●</span> "
+                        f"**{ev['event_type']}** `P={ev['value']:.3f}`<br>"
+                        f"<small>{ev['description']}</small>",
+                        unsafe_allow_html=True
+                    )
+            else:
+                st.caption("Sin eventos H7 aún")
 
-            # ── Metrics ──
-            si_color = "normal" if stability_index >= 99 else "inverse"
-            metric_cycle.metric(       "Cycle",           f"{i} / {total_cycles}")
-            metric_stability.metric(   "Stability Index", f"{stability_index:.2f}%",
-                                       delta=f"{stability_index - 100:.2f}%")
-            metric_outliers.metric(    "Outliers",        len(outliers))
-            metric_corrections.metric( "Corrections",     corrections)
-            metric_accumulator.metric( "Accumulator",     f"{accumulator:.4f}")
+            st.divider()
+            st.markdown("#### 📊 Stats")
+            if summary:
+                st.metric("Max Latency",  f"{summary.get('max_dur_us', 0):.0f} µs")
+                st.metric("Min Latency",  f"{summary.get('min_dur_us', 0):.0f} µs")
 
-            # ── Stats Table ──
-            arr = np.array(history)
-            df_stats = pd.DataFrame({
-                "Metric": ["Mean", "Std Dev", "Min", "Max", "Last"],
-                "Value":  [
-                    f"{arr.mean():.4f}",
-                    f"{arr.std():.4f}",
-                    f"{arr.min():.4f}",
-                    f"{arr.max():.4f}",
-                    f"{arr[-1]:.4f}",
-                ]
-            })
-            stats_table.dataframe(df_stats, hide_index=True, use_container_width=True)
+    # Auto-refresh
+    if status == "running":
+        time.sleep(refresh_s)
+        st.rerun()
 
-            # ── Lagrangian Card ──
-            lagrangian_card.markdown(f"""
-**Lagrangian (cycle {i})**
-| Component | Value |
-|-----------|-------|
-| `L_symp` (conservative) | `{L_symp:.6f}` |
-| `L_metr` (dissipative)  | `{L_metr:.6f}` |
-| **Ratio** |  `{abs(L_symp / L_metr) if L_metr != 0 else '∞':.4f}` |
-""")
-
-            time.sleep(0.02)
-
-    st.success(f"✅ Simulation complete! Final stability: {stability_index:.4f}% | Outliers: {len(outliers)} | Corrections: {corrections}")
-
-# ─── Run ───────────────────────────────────────────────────────────────────────
-if run_sim:
-    run_simulation(total_cycles, threshold, noise_sigma, sim_speed)
+# ════════════════════════════════════════════════════════════════════
+#  MODO SIMULACIÓN DIT
+# ════════════════════════════════════════════════════════════════════
 else:
-    phase_chart.info("👈 Configure parameters in the sidebar and click **▶ Run Simulation** to start.")
+    st.info("🟡 Modo Simulación DIT — sin hardware CL1 conectado")
+
+    with st.sidebar:
+        st.markdown("### ⚙️ Parámetros DIT")
+        total_cycles = st.slider("Ciclos", 100, 2000, 400, step=50)
+        threshold    = st.slider("Threshold", 0.5, 5.0, 2.0, step=0.1)
+        run_btn      = st.button("▶ Simular", type="primary", use_container_width=True)
+
+    if run_btn:
+        df = sim_dit_ticks(total_cycles)
+        x  = list(range(len(df)))
+
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Total Spikes",  int(df["spike_count"].sum()))
+        c2.metric("Stims Fired",   int(df["stim_fired"].sum()))
+        c3.metric("Mean Latency",  f"{df['loop_dur_us'].mean():.1f} µs")
+
+        fig = make_subplots(rows=2, cols=1, shared_xaxes=True,
+                            subplot_titles=("Spikes/tick (DIT simulated)", "L_symp vs L_metr"))
+        fig.add_trace(go.Bar(x=x, y=df["spike_count"], name="Spikes", marker_color=DIT_CYAN, opacity=0.8), row=1, col=1)
+        fig.add_trace(go.Scatter(x=x, y=df["l_symp"],  name="L_symp", line=dict(color=DIT_GREEN, width=1.3)), row=2, col=1)
+        fig.add_trace(go.Scatter(x=x, y=df["l_metr"],  name="L_metr", line=dict(color=DIT_RED,   width=1.3)), row=2, col=1)
+        fig.update_layout(height=500, paper_bgcolor="#0d0d0d", plot_bgcolor="#111827",
+                          font=dict(color="#cce6ff"), margin=dict(l=30, r=10, t=40, b=30))
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("👈 Configura los parámetros y haz clic en **▶ Simular**")
