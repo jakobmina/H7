@@ -1,0 +1,10 @@
+quoremind
+scipy
+scikit-learn
+mpmath
+cl-sdk
+qiskit
+qiskit-aer
+qiskit-ibm-runtime
+streamlit
+plotly

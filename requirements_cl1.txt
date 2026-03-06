@@ -1,0 +1,30 @@
+# requirements_cl1.txt — Dependencias fijadas para hardware CL1
+# Instalar con: pip install -r requirements_cl1.txt
+# Entorno: cl1_env (venv aislado)
+
+# ── Core científico (versiones CL1-compatibles) ────────────────────────────────
+numpy>=1.26.0,<2.0.0          # cl-sdk y tables requieren numpy < 2
+scipy>=1.11.0,<2.0.0
+scikit-learn>=1.3.0
+mpmath>=1.3.0                  # QuoreMindHP alta precisión
+
+# ── CL SDK (hardware Cortical Labs CL1) ────────────────────────────────────────
+cl-sdk==0.29.0
+pydantic>=2.5.0,<2.13.0        # Compatible con cl-sdk 0.29.0 con parche
+
+# ── Análisis cuántico ──────────────────────────────────────────────────────────
+qiskit>=1.0.0
+qiskit-aer>=0.14.0
+qiskit-ibm-runtime>=0.20.0
+
+# ── QuoreMind / DIT ───────────────────────────────────────────────────────────
+quoremind                      # Instalado vía PyPI (v1.0.0)
+# quoremindhp.py se instala desde el código fuente local (ver setup_cl1.sh)
+
+# ── Dashboard y visualización ─────────────────────────────────────────────────
+streamlit>=1.35.0
+plotly>=5.20.0
+matplotlib>=3.8.0
+
+# ── Utilidades ────────────────────────────────────────────────────────────────
+pandas>=2.1.0
