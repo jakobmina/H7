@@ -16,6 +16,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from pathlib import Path
 from cl1_db import CL1Reader
+from nodes_network import Node
 
 # ─── Page Config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -55,11 +56,22 @@ with st.sidebar:
     mode = st.radio("Modo", ["🔴 CL1 Hardware (live)", "🟡 Simulación DIT"], index=0)
     refresh_s = st.slider("Auto-refresh (s)", 1, 10, 2)
     n_ticks   = st.slider("Ticks visibles", 100, 2000, 500, step=100)
-
+ 
     st.divider()
-    st.markdown("### ℹ️ Constantes")
-    st.metric("φ", f"{PHI:.6f}")
-    st.metric("DRIFT_072", f"{DRIFT_072:.6f}")
+    st.markdown("### 🎛️ Control de Nodos (Metriplectic)")
+    nn1 = st.slider("NN1 (Fase/Inercia)", -1.0, 1.0, 0.5, step=0.01)
+    nn0 = st.slider("NN0 (Estado/Base)",  -1.0, 1.0, 0.0, step=0.01)
+    nn_1 = st.slider("NN-1 (Disipación)", -1.0, 1.0, -0.5, step=0.01)
+    
+    # Instance Node and calculate Lagrangian
+    # Usamos n basado en el tiempo para ver fluctuaciones del Operador Áureo
+    n_val = (time.time() * 10) % 1000
+    node = Node(nn1, nn0, nn_1, n=n_val)
+    l_s, l_m = node.compute_lagrangian()
+    
+    c1, c2 = st.columns(2)
+    c1.metric("L_symp (H)", f"{l_s:.4f}")
+    c2.metric("L_metr (S)", f"{l_m:.4f}")
 
     st.divider()
     st.caption("Loop: `adaptive_cl_loop.py`")

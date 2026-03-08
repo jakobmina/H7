@@ -10,7 +10,7 @@ cuántica (Qiskit) para optimizar el control en tiempo real de estimulación neu
 
 ## Arquitectura del Sistema
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                    CL1 Hardware (MEA 64ch)                  │
 │         ~88B Neuronas virtuales / cultivo biológico         │
@@ -25,11 +25,19 @@ cuántica (Qiskit) para optimizar el control en tiempo real de estimulación neu
                │                          │
                ▼                          ▼
 ┌──────────────────────┐    ┌─────────────────────────────────┐
-│   QuoreMindHP        │    │   MetriplexOracle + H7          │
-│   BayesLogicHP       │    │   (h7_quantum_oracle.py)        │
-│   50-digit precision │    │   Qiskit · Simon's Algorithm    │
-│   Shannon Entropy    │    │   s=7 hidden symmetry           │
-└──────────────┬───────┘    └─────────────────────────────────┘
+│   Red Metripléctica   │    │   MetriplexOracle + H7          │
+│   (nodes_network.py)  │    │   (h7_quantum_oracle.py)        │
+│   Box-in-Box Nesting  │    │   Qiskit · Simon's Algorithm    │
+│   Neuron Layers       │    │   s=7 hidden symmetry           │
+└──────────────┬───────┘    └─────────────────────────────────┐
+               │
+               ▼
+┌──────────────────────┐
+│   QuoreMindHP        │
+│   BayesLogicHP       │
+│   50-digit precision │
+│   Shannon Entropy    │
+└──────────────┬───────┘
                │
                ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -40,80 +48,55 @@ cuántica (Qiskit) para optimizar el control en tiempo real de estimulación neu
 
 ---
 
-## Objetivos del Proyecto
+## El Mandato Metripléctico: Red de Nodos (Box-in-Box)
 
-1. **Análisis de performance CL** — Medir latencia de loop (`loop_timing_test.py`), cuantificar "Skipped stims" y percentiles de jitter a 1000 Hz.
-2. **Integración QuoreMindHP** — `BayesLogicHP.calculate_posterior_probability()` + `StatisticalAnalysisHP.shannon_entropy()` para análisis de alta precisión sobre spikes y timing.
-3. **Algoritmo H7** — Marco de decisión basado en la simetría topológica H7 (`s=7`, pares `x↔(7⊕x)`) para adaptar parámetros de estimulación en tiempo real.
-4. **CL Adaptativo** — Ajuste dinámico de amplitud/duración de pulso basado en `P(bottleneck)` bayesiana.
-5. **Validación** — Re-ejecución de tests de timing y comparación de skipped stims antes/después.
-6. **Resumen final** — Bottlenecks identificados, soluciones implementadas, mejoras cuantificadas.
+El sistema implementa una arquitectura jerárquica de nodos que permite modelar estructuras neuronales complejas mediante capas ("Cajas dentro de Cajas"). Cada nodo, desde una neurona individual hasta un contenedor global, cumple con el Mandato Metripléctico:
 
----
+1. **Componente Simpléctica ($H$)**: Conservación de energía y rotación de fase coherente.
+2. **Componente Métrica ($S$)**: Disipación entrópica y relajación hacia atractores de estabilidad.
+3. **Operador Áureo ($O_n$)**: El fondo del espacio-tiempo está modulado por $\phi \approx 1.618$ para evitar singularidades.
 
-## Setup para Hardware CL1
+### Estructuras de la Red (`nodes_network.py`)
 
-### Requisitos del sistema
-
-- **Python 3.12+**
-- **CL1 conectado físicamente** (USB o red local)
-- **cl-sdk 0.29.0** (con parche de compatibilidad Pydantic incluido en el script)
-
-### Instalación (una sola vez)
-
-```bash
-git clone <este-repositorio>
-cd cortical
-
-# Crear entorno aislado y aplicar parches automáticamente
-chmod +x setup_cl1.sh
-./setup_cl1.sh
-
-# Activar entorno
-source cl1_env/bin/activate
-```
-
-### Ejecución en CL1
-
-```bash
-# 1. Activar entorno
-source cl1_env/bin/activate
-
-# 2. Test de timing base (30s, 1000 Hz)
-python loop_timing_test.py
-
-# 3. Loop adaptativo H7 + QuoreMindHP
-python adaptive_cl_loop.py
-
-# 4. Monitor en tiempo real
-streamlit run streamlit_monitor.py
-
-# 5. Simulación cuántica H7 (sin hardware)
-python h7_quantum_oracle.py
-```
+- **`Node`**: Unidad básica metripléctica con estados $\psi = [nn_1, nn_0, nn_{-1}]$.
+- **`HierarchicalNode`**: Contenedor que agrega recursivamente los Lagrangianos de sus hijos y mantiene su propia dinámica de frontera (membrana).
+- **`Neuron`**: Especialización para mapear potenciales de membrana biológicos al formalismo físico.
 
 ---
 
 ## Estructura del Repositorio
 
 | Archivo | Descripción |
-|---------|-------------|
+| :--- | :--- |
 | `adaptive_cl_loop.py` | Loop CL adaptativo con BayesLogicHP + H7 |
-| `loop_timing_test.py` | Benchmark de latencia de loop (baseline) |
+| `nodes_network.py` | Red jerárquica de nodos metriplécticos (Box-in-Box) |
 | `h7_quantum_oracle.py` | MetriplexOracle, H7Conservation, Qiskit |
 | `quoremind_monitor.py` | Simulación DIT de estabilidad de fase |
 | `streamlit_monitor.py` | Dashboard en tiempo real |
 | `quoremindhp.py` | QuoreMindHP — lógica bayesiana de alta precisión |
+| `tests/test_nodes_network.py` | Pruebas unitarias para la red de nodos y neuronas |
 | `setup_cl1.sh` | Setup completo del entorno CL1 |
 | `requirements_cl1.txt` | Dependencias fijadas para CL1 |
 | `requirements.txt` | Dependencias generales de desarrollo |
 
 ---
 
+## Ejecución y Pruebas
+
+```bash
+# Ejecutar pruebas de la red metripléctica
+pytest tests/test_nodes_network.py
+
+# Simulación de estabilidad de fase
+python quoremind_monitor.py
+```
+
+---
+
 ## Constantes del Sistema
 
 | Constante | Valor | Rol |
-|-----------|-------|-----|
+| :--- | :--- | :--- |
 | `φ` (Golden Ratio) | `1.6180339887` | Operador Áureo $O_n$ |
 | `DRIFT_072` | `7 - 2π ≈ 0.7168` | Corrección métrica |
 | `s` (H7 symmetry) | `7` (binary 111) | Simetría oculta del oráculo |
@@ -131,4 +114,6 @@ python h7_quantum_oracle.py
 
 ---
 
-*Jacobo Tlacaelel Mina Rodriguez · QuoreMind Framework · 2026*
+### Autoría
+
+_Jacobo Tlacaelel Mina Rodriguez · QuoreMind Framework · 2026_
