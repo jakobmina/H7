@@ -199,7 +199,7 @@ if "hardware" in mode:
             )
             fig.update_xaxes(showgrid=True, gridcolor="#1e293b")
             fig.update_yaxes(showgrid=True, gridcolor="#1e293b")
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
 
         # ── H7 Events ────────────────────────────────────────────────────────
         with event_col:
@@ -238,7 +238,7 @@ else:
         st.markdown("### ⚙️ Parámetros DIT")
         total_cycles = st.slider("Ciclos", 100, 2000, 400, step=50)
         threshold    = st.slider("Threshold", 0.5, 5.0, 2.0, step=0.1)
-        run_btn      = st.button("▶ Simular", type="primary", use_container_width=True)
+        run_btn      = st.button("▶ Simular", type="primary", width='stretch')
 
     if run_btn:
         df = sim_dit_ticks(total_cycles)
@@ -256,6 +256,6 @@ else:
         fig.add_trace(go.Scatter(x=x, y=df["l_metr"],  name="L_metr", line=dict(color=DIT_RED,   width=1.3)), row=2, col=1)
         fig.update_layout(height=500, paper_bgcolor="#0d0d0d", plot_bgcolor="#111827",
                           font=dict(color="#cce6ff"), margin=dict(l=30, r=10, t=40, b=30))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
     else:
         st.info("👈 Configura los parámetros y haz clic en **▶ Simular**")

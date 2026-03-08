@@ -66,7 +66,7 @@ for f in $CL_MODEL; do
         # Añadir Any import al inicio del archivo
         sed -i '1s/^/from typing import Any\n/' "$f"
         # Reemplazar definición problemática
-        python3 - <<'PYEOF'
+        python3 - "$f" <<'PYEOF'
 import sys
 path = sys.argv[1]
 with open(path, 'r') as fh:
@@ -83,7 +83,7 @@ with open(path, 'w') as fh:
 print(f"   ✅ Parcheado: {path}")
 PYEOF
     fi
-done "$f"
+done
 
 # ── 3. Instalar dependencias científicas (versiones CL1-compatibles) ────────────
 echo ""
@@ -130,20 +130,28 @@ try:
 except Exception as e:
     errors.append(f"   ❌ QuoreMindHP: {e}")
 
-# Verificar Qiskit
-try:
-    from qiskit import QuantumCircuit
-    from qiskit_aer import AerSimulator
-    print("   ✅ Qiskit + AerSimulator OK")
-except Exception as e:
-    errors.append(f"   ❌ Qiskit: {e}")
+    # Verificar Qiskit
+    try:
+        from qiskit import QuantumCircuit
+        from qiskit_aer import AerSimulator
+        qc = QuantumCircuit(1)
+        qc.h(0)
+        # Verificar que draw('mpl') no explote (requiere pylatexenc)
+        try:
+            import pylatexenc
+            print("   ✅ Qiskit + AerSimulator + pylatexenc OK")
+        except ImportError:
+            print("   ⚠  Qiskit OK, pero falta 'pylatexenc' para visualizaciones MPL")
+    except Exception as e:
+        errors.append(f"   ❌ Qiskit: {e}")
 
-# Verificar Streamlit
-try:
-    import streamlit
-    print(f"   ✅ Streamlit {streamlit.__version__} OK")
-except Exception as e:
-    errors.append(f"   ❌ Streamlit: {e}")
+    # Verificar Streamlit e IPyKernel
+    try:
+        import streamlit
+        import ipykernel
+        print(f"   ✅ Streamlit {streamlit.__version__} + IPyKernel OK")
+    except Exception as e:
+        errors.append(f"   ❌ Tooling (Streamlit/IPyKernel): {e}")
 
 if errors:
     print("\n⚠  Errores encontrados:")

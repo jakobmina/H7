@@ -41,8 +41,9 @@ cuántica (Qiskit) para optimizar el control en tiempo real de estimulación neu
                │
                ▼
 ┌─────────────────────────────────────────────────────────────┐
-│        Streamlit Dashboard (streamlit_monitor.py)           │
-│   Phase Stability · Lagrangian · Stability Index · Stats    │
+│        Streamlit Monitors (Real-Time Dashboards)            │
+│   1. Standard: Stability · Lagrangian · Stats               │
+│   2. 3D Brain: Hierarchical Mapping · LOD Zooming           │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -58,9 +59,15 @@ El sistema implementa una arquitectura jerárquica de nodos que permite modelar 
 
 ### Estructuras de la Red (`nodes_network.py`)
 
-- **`Node`**: Unidad básica metripléctica con estados $\psi = [nn_1, nn_0, nn_{-1}]$.
-- **`HierarchicalNode`**: Contenedor que agrega recursivamente los Lagrangianos de sus hijos y mantiene su propia dinámica de frontera (membrana).
+- **`Node`**: Unidad básica metripléctica con estados $\psi$ y **coordenadas 3D**.
+- **`HierarchicalNode`**: Contenedor con radio de influencia definido. Agrega recursivamente los Lagrangianos de sus hijos y mantiene su propia dinámica de frontera.
 - **`Neuron`**: Especialización para mapear potenciales de membrana biológicos al formalismo físico.
+
+### Mapeo Cerebral 3D (`brain_topology.py` & `brain_3d_monitor.py`)
+
+El sistema permite ahora una visualización volumétrica en tiempo real:
+- **Topología de Lóbulos**: Distribución de clusters en un elipsoide prolate.
+- **Level of Detail (LOD)**: Navegación jerárquica desde la red global (Nivel 0) hasta grupos funcionales (Nivel 1) y nodos locales (Nivel 2).
 
 ---
 
@@ -69,14 +76,16 @@ El sistema implementa una arquitectura jerárquica de nodos que permite modelar 
 | Archivo | Descripción |
 | :--- | :--- |
 | `adaptive_cl_loop.py` | Loop CL adaptativo con BayesLogicHP + H7 |
-| `nodes_network.py` | Red jerárquica de nodos metriplécticos (Box-in-Box) |
+| `nodes_network.py` | Red jerárquica de nodos metriplécticos (3D + Box-in-Box) |
+| `brain_topology.py` | Generador de topología cerebral y distribución de nodos |
+| `brain_3d_monitor.py` | Monitor 3D jerárquico con LOD (Plotly) |
 | `h7_quantum_oracle.py` | MetriplexOracle, H7Conservation, Qiskit |
 | `quoremind_monitor.py` | Simulación DIT de estabilidad de fase |
-| `streamlit_monitor.py` | Dashboard en tiempo real |
+| `streamlit_monitor.py` | Dashboard 2D en tiempo real (Fix compatible) |
 | `quoremindhp.py` | QuoreMindHP — lógica bayesiana de alta precisión |
 | `tests/test_nodes_network.py` | Pruebas unitarias para la red de nodos y neuronas |
-| `setup_cl1.sh` | Setup completo del entorno CL1 |
-| `requirements_cl1.txt` | Dependencias fijadas para CL1 |
+| `setup_cl1.sh` | Setup completo del entorno CL1 (Fix Qiskit & Pydantic) |
+| `requirements_cl1.txt` | Dependencias (Qiskit 1.0+, Aer, Pylatexenc, IPyKernel) |
 | `requirements.txt` | Dependencias generales de desarrollo |
 
 ---

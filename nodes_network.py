@@ -8,9 +8,11 @@ class Node:
     Representa un nodo neuronal base bajo el Mandato Metripléctico.
     nn1, nn0, nn_1 actúan como campos de estado (psi).
     """
-    def __init__(self, nn1, nn0, nn_1, n=0):
+    def __init__(self, nn1, nn0, nn_1, n=0, position=None, level=0):
         self.psi = np.array([nn1, nn0, nn_1], dtype=float)
         self.n = n # Índice temporal/espacial para O_n
+        self.position = position if position is not None else np.zeros(3)
+        self.level = level
         
     def golden_operator(self):
         """Regla 2.1: Fondo Estructurado (O_n)"""
@@ -31,15 +33,17 @@ class Node:
 
     def __str__(self):
         L_s, L_m = self.compute_lagrangian()
-        return f"{self.__class__.__name__}(n={self.n}) | L_symp: {L_s:.4f}, L_metr: {L_m:.4f}"
+        pos_str = f"({self.position[0]:.2f}, {self.position[1]:.2f}, {self.position[2]:.2f})"
+        return f"{self.__class__.__name__}(n={self.n}, lvl={self.level}) @ {pos_str} | L_symp: {L_s:.4f}, L_metr: {L_m:.4f}"
 
 class HierarchicalNode(Node):
     """
     Nodo contenedor (Caja dentro de Caja). 
     Agrega dinámica de sus hijos y su propia frontera.
     """
-    def __init__(self, n=0, children=None):
-        super().__init__(0, 0, 0, n=n)
+    def __init__(self, n=0, position=None, level=0, radius=1.0, children=None):
+        super().__init__(0, 0, 0, n=n, position=position, level=level)
+        self.radius = radius
         self.children = children if children is not None else []
 
     def add_child(self, child):

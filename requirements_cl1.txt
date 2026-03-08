@@ -16,6 +16,8 @@ pydantic>=2.5.0,<2.13.0        # Compatible con cl-sdk 0.29.0 con parche
 qiskit>=1.0.0
 qiskit-aer>=0.14.0
 qiskit-ibm-runtime>=0.20.0
+pylatexenc>=2.10              # Requerido para qc.draw('mpl')
+ipykernel>=6.0.0              # Para usar cl1_env en VSCode/Jupyter
 
 # ── QuoreMind / DIT ───────────────────────────────────────────────────────────
 quoremind                      # Instalado vía PyPI (v1.0.0)
