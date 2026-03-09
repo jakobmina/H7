@@ -273,13 +273,23 @@ with tabs[1]:
         st.subheader("🚀 H7 Experiment Launcher")
         st.write("Lanza experimentos pre-configurados con el Mandato Metripléxico.")
         
+        exp_k = st.slider("Disipación K+ (S-Factor)", 0.0, 1.0, 0.1, step=0.01)
+        exp_f = st.slider("Frecuencia Base (H-Base)", 0.1, 10.0, 1.0, step=0.1)
+        
         if st.button("Lanzar Φ-Modulated Experiment (30s)", help="Ejecuta h7_phi_experiment.py"):
             with st.spinner("Ejecutando experimento..."):
                 try:
-                    res = subprocess.run([sys.executable, "h7_phi_experiment.py"], capture_output=True, text=True, timeout=60)
+                    res = subprocess.run([
+                        sys.executable, "h7_phi_experiment.py", 
+                        "--duration", "30",
+                        "--k_factor", str(exp_k),
+                        "--f0", str(exp_f)
+                    ], capture_output=True, text=True, timeout=60)
                     if res.returncode == 0:
                         st.success("✅ Experimento completado con éxito.")
                         st.code(res.stdout[-500:], language="text")
+                        # Forzar recarga de la lista de archivos para el convertidor
+                        st.rerun()
                     else:
                         st.error(f"❌ Error en el experimento: {res.stderr}")
                 except Exception as e:
@@ -294,6 +304,8 @@ with tabs[1]:
         st.write("Convierte grabaciones binarias H5 a JSON preservando la integridad metripléxica.")
         
         h5_files = glob.glob("*.h5")
+        # Ordenar por fecha de modificación (más nuevos primero)
+        h5_files.sort(key=lambda x: Path(x).stat().st_mtime, reverse=True)
         if not h5_files:
             st.warning("No se encontraron archivos .h5 en el directorio.")
         else:

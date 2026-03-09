@@ -10,6 +10,7 @@ componentes Simplécticas (H) y Métricas (S).
 import numpy as np
 import time
 import matplotlib.pyplot as plt
+import argparse
 import cl
 from cl1_db import CL1Database
 
@@ -23,10 +24,11 @@ class H7PhiController:
     Sodium (Na+): Componente de activación rápida (H - Conservativa/Interferencia)
     Potassium (K+): Componente de desactivación lenta (S - Disipativa/Métrica)
     """
-    def __init__(self, f0=1.0, base_amp=1.5):
+    def __init__(self, f0=1.0, base_amp=1.5, k_factor=0.1):
         self.f0 = f0
         self.phi = PHI
         self.base_amp = base_amp
+        self.k_factor = k_factor # Factor de disipación del Potasio (Regla 1.2)
         self.O_n_integrity = np.cos(np.pi * PHI) # Regla 2.1
         
     def compute_lagrangian(self, t):
@@ -38,7 +40,7 @@ class H7PhiController:
                  
         # Componente Métrica (S): Relajación / Atractor
         # K+ emulation: Recovery period (dissipation of excitation)
-        L_metr = -abs(L_symp) * 0.1 # Disipación proporcional a la amplitud
+        L_metr = -abs(L_symp) * self.k_factor # Disipación proporcional a la amplitud
         
         return L_symp, L_metr
 
@@ -60,12 +62,13 @@ class H7PhiController:
         )
 
 # ─── 2. EJECUCIÓN DEL EXPERIMENTO ───
-def run_phi_experiment(duration_s=30, channels=[27]):
+def run_phi_experiment(duration_s=30, channels=[27], k_factor=0.1, f0=1.0, base_amp=2.0):
     print(f"🚀 Iniciando Experimento H7: Estímulo Modulado por \u03c6")
     print(f"   Modo: Emulación Sodio/Potasio (Metripléxico)")
+    print(f"   Parámetros: f0={f0}Hz | Amp={base_amp}uA | K-factor(S)={k_factor}")
     print(f"   Integridad O_n: {np.cos(np.pi * PHI):.6f}\n")
     
-    h7 = H7PhiController(f0=1.0, base_amp=2.0)
+    h7 = H7PhiController(f0=f0, base_amp=base_amp, k_factor=k_factor)
     db = CL1Database()
     db.new_session(ticks_per_second=1000, run_for_seconds=duration_s)
     
@@ -141,4 +144,17 @@ def plot_diagnostic(h7, duration=2.0):
     # plt.show() # Opcional, pero guardamos imagen para el walkthrough
 
 if __name__ == "__main__":
-    run_phi_experiment(duration_s=30)
+    parser = argparse.ArgumentParser(description="H7 Phi-Modulated Experiment")
+    parser.add_argument("--duration", type=int, default=30, help="Duration in seconds")
+    parser.add_argument("--k_factor", type=float, default=0.1, help="Potassium relaxation factor (S)")
+    parser.add_argument("--f0", type=float, default=1.0, help="Base frequency (H)")
+    parser.add_argument("--amp", type=float, default=2.0, help="Base amplitude (uA)")
+    
+    args = parser.parse_args()
+    
+    run_phi_experiment(
+        duration_s=args.duration, 
+        k_factor=args.k_factor,
+        f0=args.f0,
+        base_amp=args.amp
+    )
