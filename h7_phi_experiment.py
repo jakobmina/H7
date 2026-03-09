@@ -67,7 +67,7 @@ def run_phi_experiment(duration_s=30, channels=[27]):
     
     h7 = H7PhiController(f0=1.0, base_amp=2.0)
     db = CL1Database()
-    db.new_session(ticks_per_sec=1000, duration_sec=duration_s)
+    db.new_session(ticks_per_second=1000, run_for_seconds=duration_s)
     
     start_time = time.time()
     ticks_target = int(duration_s * 1000)
