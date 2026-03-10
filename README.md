@@ -13,14 +13,10 @@ cuántica (Qiskit) para optimizar el control en tiempo real de estimulación neu
 ```text
 ┌─────────────────────────────────────────────────────────────┐
 │                    CL1 Hardware (MEA 64ch)                  │
-│         ~88B Neuronas virtuales / cultivo biológico         │
-└──────────────────────┬──────────────────────────────────────┘
-                       │  cl-sdk (1000 Hz loop)
-                       ▼
-┌─────────────────────────────────────────────────────────────┐
-│              Loop Adaptativo H7 (adaptive_cl_loop.py)       │
+│         ~88B Neuronas virtuales / cultivo biológico    ┌─────────────────────────────────────────────────────────────┐
+│              Loop Adaptativo H7 (smopsys/)                  │
 │   d_symp = O_n(i) = cos(πi)·cos(πφi)  [conservativo]       │
-│   d_metr = DRIFT_072 correction        [disipativo]         │
+│   d_metr = [u, S] (Ionic Emulation Na+/K+) [disipativo]    │
 └──────────────┬──────────────────────────┬───────────────────┘
                │                          │
                ▼                          ▼
@@ -32,40 +28,54 @@ cuántica (Qiskit) para optimizar el control en tiempo real de estimulación neu
 └──────────────┬───────┘    └─────────────────────────────────┐
                │
                ▼
-┌──────────────────────┐
-│   QuoreMindHP        │
-│   BayesLogicHP       │
-│   50-digit precision │
-│   Shannon Entropy    │
-└──────────────┬───────┘
-               │
-               ▼
+┌──────────────────────┐    ┌─────────────────────────────────┐
+│   QuoreMindHP        │    │      Lab Analysis (H7)          │
+│   BayesLogicHP       │    │   h7_phi_experiment.py          │
+│   50-digit precision │    │   h5_to_json.py Utility         │
+└──────────────┬───────┘    └────────────────┬────────────────┘
+               │                             │
+               ▼                             ▼
 ┌─────────────────────────────────────────────────────────────┐
-│        Streamlit Monitors (Real-Time Dashboards)            │
-│   1. Standard: Stability · Lagrangian · Stats               │
-│   2. 3D Brain: Hierarchical Mapping · LOD Zooming           │
+│        Dashboards (dashboard/streamlit_monitor.py)          │
+│   1. Real-Time Monitor: Spikes · Lagrangian · H7 Events      │
+│   2. Lab Analysis: Experimento Φ · H5-to-JSON Converter     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## El Mandato Metripléctico: Red de Nodos (Box-in-Box)
+## Estructura del Proyecto (Modular)
 
-El sistema implementa una arquitectura jerárquica de nodos que permite modelar estructuras neuronales complejas mediante capas ("Cajas dentro de Cajas"). Cada nodo, desde una neurona individual hasta un contenedor global, cumple con el Mandato Metripléctico:
+El proyecto se divide en dos módulos principales para coherencia física y operativa:
 
-1. **Componente Simpléctica ($H$)**: Conservación de energía y rotación de fase coherente.
-2. **Componente Métrica ($S$)**: Disipación entrópica y relajación hacia atractores de estabilidad.
-3. **Operador Áureo ($O_n$)**: El fondo del espacio-tiempo está modulado por $\phi \approx 1.618$ para evitar singularidades.
+### 🧪 `smopsys/` (Core Physics & Experiments)
+- **`h7_phi_experiment.py`**: Experimento de estímulo modulado por $\phi$ con emulación iónica Na+/K+.
+- **`brain_topology.py`**: Generador de topología cerebral modular (Box-in-Box) alineado con $O_n$.
+- **`nodes_network.py`**: Motor de red metripléptica jerárquica.
+- **`h7_quantum_oracle.py`**: Oráculo cuántico Metriplex (Qiskit).
+- **`adaptive_cl_loop.py`**: Bucle de control adaptativo CL1.
 
-### Estructuras de la Red (`nodes_network.py`)
+### 📊 `dashboard/` (Monitoring & Utilities)
+- **`streamlit_monitor.py`**: Consola de mando central con visualización de Lagrangianos.
+- **`cl1_db.py`**: Interfaz de base de datos para lectura/escritura en tiempo real.
+- **`h5_to_json.py`**: Utilidad de exportación de datos preservando metadatos $O_n$.
 
-- **`Node`**: Unidad básica metripléctica con estados $\psi$ y **coordenadas 3D**.
-- **`HierarchicalNode`**: Contenedor con radio de influencia definido. Agrega recursivamente los Lagrangianos de sus hijos y mantiene su propia dinámica de frontera.
-- **`Neuron`**: Especialización para mapear potenciales de membrana biológicos al formalismo físico.
+### 📂 `records/` & `tests/`
+- **`records/`**: Grabaciones `.h5`, sesiones `.sqlite` y diagnósticos `.png`.
+- **`tests/`**: Suite completa de `pytest` para validación de lógica física y topológica.
 
-### Mapeo Cerebral 3D (`brain_topology.py` & `brain_3d_monitor.py`)
+---
 
-El sistema permite ahora una visualización volumétrica en tiempo real:
+## Ejecución
+
+```bash
+# Lanzar el dashboard central
+streamlit run dashboard/streamlit_monitor.py
+
+# Ejecutar tests de integridad
+pytest tests/
+```
+alización volumétrica en tiempo real:
 - **Topología de Lóbulos**: Distribución de clusters en un elipsoide prolate.
 - **Level of Detail (LOD)**: Navegación jerárquica desde la red global (Nivel 0) hasta grupos funcionales (Nivel 1) y nodos locales (Nivel 2).
 

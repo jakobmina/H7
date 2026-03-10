@@ -15,11 +15,13 @@ import pandas as pd
 import sys
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from pathlib import Path
-import subprocess
-import glob
-from cl1_db import CL1Reader
-from nodes_network import Node
+# Adjust path to allow imports from smopsys
+root_path = Path(__file__).parent.parent.absolute()
+if str(root_path) not in sys.path:
+    sys.path.append(str(root_path))
+
+from dashboard.cl1_db import CL1Reader
+from smopsys.nodes_network import Node
 
 # ─── Page Config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -279,12 +281,14 @@ with tabs[1]:
         if st.button("Lanzar Φ-Modulated Experiment (30s)", help="Ejecuta h7_phi_experiment.py"):
             with st.spinner("Ejecutando experimento..."):
                 try:
+                    # Script path relative to root
+                    script_path = root_path / "smopsys" / "h7_phi_experiment.py"
                     res = subprocess.run([
-                        sys.executable, "h7_phi_experiment.py", 
+                        sys.executable, str(script_path), 
                         "--duration", "30",
                         "--k_factor", str(exp_k),
                         "--f0", str(exp_f)
-                    ], capture_output=True, text=True, timeout=60)
+                    ], capture_output=True, text=True, timeout=60, cwd=str(root_path))
                     if res.returncode == 0:
                         st.success("✅ Experimento completado con éxito.")
                         st.code(res.stdout[-500:], language="text")
@@ -303,7 +307,10 @@ with tabs[1]:
         st.subheader("📂 H5 to JSON Converter")
         st.write("Convierte grabaciones binarias H5 a JSON preservando la integridad metripléxica.")
         
-        h5_files = glob.glob("*.h5")
+        # Search for .h5 in root and dashboard
+        h5_files = glob.glob(str(root_path / "*.h5")) + glob.glob("*.h5")
+        h5_files = list(set([str(Path(f).absolute()) for f in h5_files]))
+        
         # Ordenar por fecha de modificación (más nuevos primero)
         h5_files.sort(key=lambda x: Path(x).stat().st_mtime, reverse=True)
         if not h5_files:
@@ -313,7 +320,9 @@ with tabs[1]:
             if st.button("Convertir a JSON"):
                 with st.spinner(f"Convirtiendo {selected_h5}..."):
                     try:
-                        res = subprocess.run([sys.executable, "h5_to_json.py", selected_h5], capture_output=True, text=True)
+                        # h5_to_json.py is in the same folder as this script
+                        script_path = Path(__file__).parent / "h5_to_json.py"
+                        res = subprocess.run([sys.executable, str(script_path), selected_h5], capture_output=True, text=True)
                         if res.returncode == 0:
                             st.success(f"✅ {selected_h5} convertido exitosamente.")
                             json_file = selected_h5.replace(".h5", ".json")

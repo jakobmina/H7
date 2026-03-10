@@ -11,8 +11,16 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 import argparse
+from pathlib import Path
+import sys
+
+# Adjust path to allow imports from dashboard
+root_path = Path(__file__).parent.parent.absolute()
+if str(root_path) not in sys.path:
+    sys.path.append(str(root_path))
+
 import cl
-from cl1_db import CL1Database
+from dashboard.cl1_db import CL1Database
 
 # ─── 1. MANDATO METRIPLÉXICO: FISICA CORE ───
 PHI = (1 + np.sqrt(5)) / 2
