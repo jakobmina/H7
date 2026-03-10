@@ -13,7 +13,15 @@ Bridge:
 """
 
 import cl
-from cl1_db import CL1Database
+from pathlib import Path
+import sys
+
+# Adjust path to allow imports from dashboard
+root_path = Path(__file__).parent.parent.absolute()
+if str(root_path) not in sys.path:
+    sys.path.append(str(root_path))
+
+from dashboard.cl1_db import CL1Database
 import time
 import numpy as np
 import mpmath

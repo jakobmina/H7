@@ -1,8 +1,16 @@
 import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
-from brain_topology import generate_brain_topology
-from nodes_network import HierarchicalNode, Node
+from pathlib import Path
+import sys
+
+# Adjust path to allow imports from smopsys
+root_path = Path(__file__).parent.parent.absolute()
+if str(root_path) not in sys.path:
+    sys.path.append(str(root_path))
+
+from smopsys.brain_topology import generate_brain_topology
+from smopsys.nodes_network import HierarchicalNode, Node
 
 # --- Page Config ---
 st.set_page_config(page_title="3D Brain Node Mapper", page_icon="🧠", layout="wide")

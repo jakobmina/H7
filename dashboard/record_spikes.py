@@ -1,7 +1,15 @@
 import cl
 import time
 import numpy as np
-from nodes_network import Node
+from pathlib import Path
+import sys
+
+# Adjust path to allow imports from smopsys
+root_path = Path(__file__).parent.parent.absolute()
+if str(root_path) not in sys.path:
+    sys.path.append(str(root_path))
+
+from smopsys.nodes_network import Node
 
 def record_session(duration=3, nn1=0.5, nn0=0.0, nn_1=-0.5):
     """
