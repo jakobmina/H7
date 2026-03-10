@@ -310,7 +310,7 @@ with tabs[1]:
         st.write("Convert H5 binary recordings to JSON preserving metriplectic integrity.")
         
         # Search for .h5 in root and dashboard
-        h5_files = glob.glob(str(root_path / "*.h5")) + glob.glob("*.h5")
+        h5_files = glob(str(root_path / "*.h5")) + glob.glob("*.h5")
         h5_files = list(set([str(Path(f).absolute()) for f in h5_files]))
         
         # Ordenar por fecha de modificación (más nuevos primero)
