@@ -17,7 +17,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🧠 3D Hierarchical Brain Node Mapper")
-st.markdown("### Mandato Metripléxico: Mapeo de Control en Topología 3D")
+st.markdown("### Metriplectic Mandate: Control Mapping in 3D Topology")
 
 # --- State Management ---
 if 'brain' not in st.session_state:
