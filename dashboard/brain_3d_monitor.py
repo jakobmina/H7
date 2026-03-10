@@ -9,8 +9,8 @@ root_path = Path(__file__).parent.parent.absolute()
 if str(root_path) not in sys.path:
     sys.path.append(str(root_path))
 
-from smopsys.brain_topology import generate_brain_topology
-from smopsys.nodes_network import HierarchicalNode, Node
+from dashboard.brain_topology import generate_brain_topology
+from dashboard.nodes_network import HierarchicalNode, Node
 
 # --- Page Config ---
 st.set_page_config(page_title="3D Brain Node Mapper", page_icon="🧠", layout="wide")

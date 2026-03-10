@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from smopsys.brain_topology import generate_brain_topology, generate_golden_position
+from dashboard.brain_topology import generate_brain_topology, generate_golden_position
 
 def test_brain_topology_structure():
     n_clusters = 5

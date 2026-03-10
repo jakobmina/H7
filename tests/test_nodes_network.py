@@ -6,7 +6,7 @@ import numpy as np
 # Añadir el directorio raíz al path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from nodes_network import Node, Network, HierarchicalNode, Neuron, PHI
+from dashboard.nodes_network import Node, HierarchicalNode, Neuron, PHI
 
 def test_node_metriplectic_components():
     """Verifica que el nodo genere componentes simplecticas y métricas válidas."""

@@ -13,6 +13,7 @@ import numpy as np
 import time
 import pandas as pd
 import sys
+from pathlib import Path
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 # Adjust path to allow imports from smopsys
@@ -21,7 +22,8 @@ if str(root_path) not in sys.path:
     sys.path.append(str(root_path))
 
 from dashboard.cl1_db import CL1Reader
-from smopsys.nodes_network import Node
+# nodes_network.py is now in dashboard/
+from dashboard.nodes_network import Node
 
 # ─── Page Config ───────────────────────────────────────────────────────────────
 st.set_page_config(
