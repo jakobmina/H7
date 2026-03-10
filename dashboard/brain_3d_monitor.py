@@ -86,6 +86,15 @@ for node in visible_nodes:
         f"Stability: {stab:.2f}%"
     )
 
+# Sanitize data for Plotly (remove NaNs if any persist)
+x = np.array(x)
+y = np.array(y)
+z = np.array(z)
+mask = ~np.isnan(x) & ~np.isnan(y) & ~np.isnan(z)
+x, y, z = x[mask], y[mask], z[mask]
+stability = np.array(stability)[mask]
+text_labels = [text_labels[i] for i, m in enumerate(mask) if m]
+
 # --- 3D Plotly Figure ---
 fig = go.Figure(data=[go.Scatter3d(
     x=x, y=y, z=z,
@@ -113,7 +122,7 @@ fig.update_layout(
     height=700
 )
 
-st.plotly_chart(fig, width='stretch')
+st.plotly_chart(fig, use_container_width=True)
 
 # --- Details Panel ---
 st.divider()
@@ -146,4 +155,4 @@ with c2:
         margin=dict(l=0, r=0, t=30, b=0),
         title="Lagrangian Distribution"
     )
-    st.plotly_chart(fig_hist, width='stretch')
+    st.plotly_chart(fig_hist, use_container_width=True)

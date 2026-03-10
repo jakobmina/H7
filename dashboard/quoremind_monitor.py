@@ -93,9 +93,6 @@ class QuoreMindMonitor:
 
 
 if __name__ == "__main__":
-    monitor = QuoreMindMonitor()
-    print(f"🚀 INITIALIZING QUOREMIND ENGINE | SCALE: 8.8e10 NEURONS")
-    print(f"   φ = {np.cos(np.pi * PHI * 1):.6f} | DRIFT_072 = {DRIFT_072:.6f} | THRESHOLD = {THRESHOLD}")
     time.sleep(1.5)
 
     for i in range(1, TOTAL_CYCLES + 1):

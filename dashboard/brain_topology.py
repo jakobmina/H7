@@ -28,8 +28,11 @@ def generate_golden_position(a, b, c, n):
     Regla 2.1: El vacío no es plano, está estructurado.
     """
     # Usamos n para determinar los ángulos basados en espirales áureas
-    # Esto asegura una distribución más orgánica y eficiente
-    theta = np.arccos(1 - 2 * (n / 100)) # Mapeo simple de n a ángulo
+    # Normalize n to ensure it maps to [0, 1] within the distribution cycle
+    # We'll use a larger base (e.g., 500) or ideally the total expected nodes.
+    # For now, let's use a safe normalization that assumes a reasonable range.
+    n_norm = (n % 1000) / 1000.0 if n > 1000 else (n / 1000.0) 
+    theta = np.arccos(1 - 2 * n_norm) # Mapeo de n a ángulo [0, pi]
     phi_angle = 2 * np.pi * PHI * n
     
     # Modulación de radio por el Operador Áureo local
