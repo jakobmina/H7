@@ -1,11 +1,11 @@
 """
 streamlit_monitor.py — CL1 Real-Time Monitor
 
-Lee datos reales del hardware CL1 desde cl1_session.sqlite (WAL).
-Muestra: spikes/tick, latencia de loop, P(bottleneck), L_symp vs L_metr,
-eventos H7, y todas las estadísticas de sesión en tiempo real.
+Reads real data from CL1 hardware from cl1_session.sqlite (WAL).
+Shows: spikes/tick, loop latency, P(bottleneck), L_symp vs L_metr,
+H7 events, and all session statistics in real time.
 
-Modo simulación: si no hay sesión CL1 activa, corre la simulación DIT local.
+Simulation mode: if no active CL1 session, runs local DIT simulation.
 """
 
 import streamlit as st
@@ -56,18 +56,18 @@ with st.sidebar:
     st.markdown("**QuoreMindHP + H7 Adaptive Loop**")
     st.divider()
 
-    mode = st.radio("Modo", ["🔴 CL1 Hardware (live)", "🟡 Simulación DIT"], index=0)
+    mode = st.radio("Mode", ["🔴 CL1 Hardware (live)", "🟡 DIT Simulation"], index=0)
     refresh_s = st.slider("Auto-refresh (s)", 1, 10, 2)
-    n_ticks   = st.slider("Ticks visibles", 100, 2000, 500, step=100)
+    n_ticks   = st.slider("Visible Ticks", 100, 2000, 500, step=100)
  
     st.divider()
-    st.markdown("### 🎛️ Control de Nodos (Metriplectic)")
-    nn1 = st.slider("NN1 (Fase/Inercia)", -1.0, 1.0, 0.5, step=0.01)
-    nn0 = st.slider("NN0 (Estado/Base)",  -1.0, 1.0, 0.0, step=0.01)
-    nn_1 = st.slider("NN-1 (Disipación)", -1.0, 1.0, -0.5, step=0.01)
+    st.markdown("### 🎛️ Node Control (Metriplectic)")
+    nn1 = st.slider("NN1 (Phase/Inertia)", -1.0, 1.0, 0.5, step=0.01)
+    nn0 = st.slider("NN0 (State/Base)",  -1.0, 1.0, 0.0, step=0.01)
+    nn_1 = st.slider("NN-1 (Dissipation)", -1.0, 1.0, -0.5, step=0.01)
     
     # Instance Node and calculate Lagrangian
-    # Usamos n basado en el tiempo para ver fluctuaciones del Operador Áureo
+    # Use n based on time to see Golden Operator fluctuations
     n_val = (time.time() * 10) % 1000
     node = Node(nn1, nn0, nn_1, n=n_val)
     l_s, l_m = node.compute_lagrangian()
@@ -91,7 +91,7 @@ with tabs[0]:
 
     # ─── Helper: Simulation DIT ────────────────────────────────────────────────────
     def sim_dit_ticks(n: int) -> pd.DataFrame:
-        """Genera ticks simulados con el Operador Áureo para demo sin hardware."""
+        """Generates simulated ticks with the Golden Operator for demo without hardware."""
         data = []
         acc = 0.0
         for i in range(1, n + 1):
@@ -116,11 +116,11 @@ with tabs[0]:
 
         # Status banner
         if status == "running":
-            st.success("🔴 **CL1 hardware ACTIVO** — Leyendo datos en tiempo real")
+            st.success("🔴 **CL1 hardware ACTIVE** — Reading real-time data")
         elif status == "done":
-            st.info("✅ Sesión completada — mostrando datos históricos")
+            st.info("✅ Session completed — showing historical data")
         else:
-            st.warning("⏳ Esperando sesión CL1... Ejecuta `python adaptive_cl_loop.py`")
+            st.warning("⏳ Waiting for CL1 session... Run `python adaptive_cl_loop.py`")
 
         # Metric row
         summary = reader.get_summary()
@@ -137,20 +137,20 @@ with tabs[0]:
         # Fetch ticks
         ticks = reader.get_recent_ticks(n_ticks)
         if not ticks:
-            st.info("Sin datos aún. Inicia el loop CL1.")
+            st.info("No data yet. Start the CL1 loop.")
         else:
             df = pd.DataFrame(ticks)
 
-            # ── Gráficas principales ─────────────────────────────────────────────
+            # ── Main Charts ─────────────────────────────────────────────
             chart_col, event_col = st.columns([3, 1])
             with chart_col:
                 fig = make_subplots(
                     rows=3, cols=1, shared_xaxes=True,
                     row_heights=[0.40, 0.30, 0.30],
                     subplot_titles=(
-                        "Spikes por Tick + Estimulaciones",
-                        "Latencia del Loop (µs) + P(bottleneck)",
-                        "Lagrangiano: L_symp (conservativo) vs L_metr (disipativo)"
+                        "Spikes per Tick + Stimulations",
+                        "Loop Latency (µs) + P(bottleneck)",
+                        "Lagrangian: L_symp (conservative) vs L_metr (dissipative)"
                     ),
                 )
                 x = list(range(len(df)))
@@ -208,7 +208,7 @@ with tabs[0]:
 
             # ── H7 Events ────────────────────────────────────────────────────────
             with event_col:
-                st.markdown("#### ⚡ Eventos H7")
+                st.markdown("#### ⚡ H7 Events")
                 events = reader.get_h7_events(30)
                 if events:
                     for ev in reversed(events[-15:]):
@@ -220,7 +220,7 @@ with tabs[0]:
                             unsafe_allow_html=True
                         )
                 else:
-                    st.caption("Sin eventos H7 aún")
+                    st.caption("No H7 events yet")
 
                 st.divider()
                 st.markdown("#### 📊 Stats")
@@ -233,13 +233,13 @@ with tabs[0]:
             st.rerun()
             
     else:
-        st.info("🟡 Modo Simulación DIT — sin hardware CL1 conectado")
+        st.info("🟡 DIT Simulation Mode — no CL1 hardware connected")
 
         with st.sidebar:
-            st.markdown("### ⚙️ Parámetros DIT")
-            total_cycles = st.slider("Ciclos", 100, 2000, 400, step=50)
+            st.markdown("### ⚙️ DIT Parameters")
+            total_cycles = st.slider("Cycles", 100, 2000, 400, step=50)
             threshold    = st.slider("Threshold", 0.5, 5.0, 2.0, step=0.1)
-            run_btn      = st.button("▶ Simular", type="primary", use_container_width=True)
+            run_btn      = st.button("▶ Simulate", type="primary", use_container_width=True)
 
         if run_btn:
             df = sim_dit_ticks(total_cycles)
@@ -259,7 +259,7 @@ with tabs[0]:
                               font=dict(color="#cce6ff"), margin=dict(l=30, r=10, t=40, b=30))
             st.plotly_chart(fig, use_container_width=True)
         else:
-            st.info("👈 Configura los parámetros y haz clic en **▶ Simular**")
+            st.info("👈 Configure the parameters and click on **▶ Simulate**")
 
 # ════════════════════════════════════════════════════════════════════
 #  TAB 2: LAB ANALYSIS
@@ -271,13 +271,13 @@ with tabs[1]:
     
     with col_exp:
         st.subheader("🚀 H7 Experiment Launcher")
-        st.write("Lanza experimentos pre-configurados con el Mandato Metripléxico.")
+        st.write("Launch pre-configured experiments with the Metriplectic Mandate.")
         
-        exp_k = st.slider("Disipación K+ (S-Factor)", 0.0, 1.0, 0.1, step=0.01)
-        exp_f = st.slider("Frecuencia Base (H-Base)", 0.1, 10.0, 1.0, step=0.1)
+        exp_k = st.slider("Dissipation K+ (S-Factor)", 0.0, 1.0, 0.1, step=0.01)
+        exp_f = st.slider("Base Frequency (H-Base)", 0.1, 10.0, 1.0, step=0.1)
         
-        if st.button("Lanzar Φ-Modulated Experiment (30s)", help="Ejecuta h7_phi_experiment.py"):
-            with st.spinner("Ejecutando experimento..."):
+        if st.button("Launch Φ-Modulated Experiment (30s)", help="Executes h7_phi_experiment.py"):
+            with st.spinner("Running experiment..."):
                 try:
                     res = subprocess.run([
                         sys.executable, "h7_phi_experiment.py", 
@@ -286,45 +286,74 @@ with tabs[1]:
                         "--f0", str(exp_f)
                     ], capture_output=True, text=True, timeout=60)
                     if res.returncode == 0:
-                        st.success("✅ Experimento completado con éxito.")
+                        st.success("✅ Experiment successfully completed.")
                         st.code(res.stdout[-500:], language="text")
-                        # Forzar recarga de la lista de archivos para el convertidor
+                        # Force file list reload for the converter
                         st.rerun()
                     else:
-                        st.error(f"❌ Error en el experimento: {res.stderr}")
+                        st.error(f"❌ Experiment error: {res.stderr}")
                 except Exception as e:
-                    st.error(f"Error fatal: {e}")
+                    st.error(f"Fatal error: {e}")
         
         diag_img = Path("h7_ionic_diagnostic.png")
         if diag_img.exists():
-            st.image(str(diag_img), caption="Regla 3.3: Diagnóstico de última corrida")
+            st.image(str(diag_img), caption="Rule 3.3: Last run diagnostic")
 
     with col_h5:
         st.subheader("📂 H5 to JSON Converter")
-        st.write("Convierte grabaciones binarias H5 a JSON preservando la integridad metripléxica.")
+        st.write("Convert H5 binary recordings to JSON preserving metriplectic integrity.")
         
         h5_files = glob.glob("*.h5")
         # Ordenar por fecha de modificación (más nuevos primero)
         h5_files.sort(key=lambda x: Path(x).stat().st_mtime, reverse=True)
         if not h5_files:
-            st.warning("No se encontraron archivos .h5 en el directorio.")
+            st.warning("No .h5 files found in the directory.")
         else:
-            selected_h5 = st.selectbox("Selecciona archivo H5", h5_files)
-            if st.button("Convertir a JSON"):
-                with st.spinner(f"Convirtiendo {selected_h5}..."):
+            selected_h5 = st.selectbox("Select H5 file", h5_files)
+            if st.button("Convert to JSON"):
+                with st.spinner(f"Converting {selected_h5}..."):
                     try:
                         res = subprocess.run([sys.executable, "h5_to_json.py", selected_h5], capture_output=True, text=True)
                         if res.returncode == 0:
-                            st.success(f"✅ {selected_h5} convertido exitosamente.")
+                            st.success(f"✅ {selected_h5} successfully converted.")
                             json_file = selected_h5.replace(".h5", ".json")
-                            st.info(f"Archivo generado: `{json_file}`")
+                            st.info(f"Generated file: `{json_file}`")
+
+                            # Provide download button for the newly created file
+                            if Path(json_file).exists():
+                                with open(json_file, "rb") as f:
+                                    st.download_button(
+                                        label="📥 Download JSON",
+                                        data=f,
+                                        file_name=json_file,
+                                        mime="application/json"
+                                    )
                         else:
-                            st.error(f"❌ Error en conversión: {res.stderr}")
+                            st.error(f"❌ Conversion error: {res.stderr}")
                     except Exception as e:
                         st.error(f"Error: {e}")
 
     st.divider()
+
+    st.subheader("📂 Manage JSON Recordings")
+    json_files = glob.glob("*.json")
+    json_files.sort(key=lambda x: Path(x).stat().st_mtime, reverse=True)
+
+    if not json_files:
+        st.info("No JSON files found. Convert some H5 files first.")
+    else:
+        for jf in json_files:
+            col1, col2 = st.columns([3, 1])
+            col1.write(f"📄 `{jf}`")
+            with open(jf, "rb") as f:
+                col2.download_button(
+                    label="Download",
+                    data=f,
+                    file_name=jf,
+                    mime="application/json",
+                    key=f"dl_{jf}"
+                )
     st.markdown("### 📜 Metriplectic Rules Compliance")
     st.info("""
-    **Regla 1**: Conservación (H) vs Disipación (S) | **Regla 2**: Fondo Estructurado ($O_n$) | **Regla 3**: Código como Teoría
+    **Rule 1**: Conservation (H) vs Dissipation (S) | **Rule 2**: Structured Background ($O_n$) | **Rule 3**: Code as Theory
     """)
