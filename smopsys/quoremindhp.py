@@ -6,8 +6,8 @@ lógica bayesiana, realizar análisis estadísticos (incluyendo distancia de Mah
 de alta precisión) y modelar el "Ruido Probabilístico de Referencia" (PRN),
 utilizando aritmética de precisión arbitraria con la biblioteca mpmath.
 
-Fecha: 11-04-2025  (Adapta la fecha si es necesario)
-Autor: Jacobo Tlacaelel Mina Rodríguez (adaptado por IA)
+Fecha: 11-04-2025  
+Autor: Jacobo Tlacaelel Mina Rodríguez (documentado y optimizado por IA)
 Proyecto: QuoreMindHP v1.0.0 (Basado en QuoreMind v1.0.0)
 """
 
