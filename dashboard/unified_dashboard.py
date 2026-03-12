@@ -142,26 +142,45 @@ elif selected_tab == "🕸️ 3D Topology":
 
     visible_nodes = get_nodes_at_level(st.session_state.brain, lod_level)
     
+    # Prepare Data for Plotly
     x, y, z, stability, labels = [], [], [], [], []
     for node in visible_nodes:
         pos = node.position
         # Sanity check for NaNs
         if np.any(np.isnan(pos)): continue
         
-        x.append(pos[0]); y.append(pos[1]); z.append(pos[2])
         ls, lm = node.compute_lagrangian()
         stab = 100 * (1.0 - abs(lm / (abs(ls) + 1e-6)))
+        
+        x.append(pos[0])
+        y.append(pos[1])
+        z.append(pos[2])
         stability.append(stab)
-        labels.append(f"Lvl: {node.level}<br>Stab: {stab:.2f}%")
+        labels.append(f"Lvl: {node.level}<br>Stab: {stab:.2f}%<br>L_symp: {ls:.4f}<br>L_metr: {lm:.4f}")
 
+    # --- 3D Plotly Figure ---
     fig = go.Figure(data=[go.Scatter3d(
         x=x, y=y, z=z, mode='markers',
-        marker=dict(size=8, color=stability, colorscale='Viridis', opacity=0.8),
+        marker=dict(
+            size=12 if lod_level == 0 else (8 if lod_level == 1 else 4),
+            color=stability, 
+            colorscale='Viridis', 
+            opacity=0.8,
+            colorbar=dict(title="Stability Index"),
+            line=dict(width=0.5, color='white')
+        ),
         text=labels, hoverinfo='text'
     )])
+    
     fig.update_layout(
-        scene=dict(xaxis=dict(gridcolor="gray"), yaxis=dict(gridcolor="gray"), zaxis=dict(gridcolor="gray")),
-        paper_bgcolor="#0d0d0d", height=700, margin=dict(l=0,r=0,b=0,t=0)
+        scene=dict(
+            xaxis=dict(backgroundcolor="rgb(0, 0, 0)", gridcolor="gray", showbackground=True, zerolinecolor="gray"),
+            yaxis=dict(backgroundcolor="rgb(0, 0, 0)", gridcolor="gray", showbackground=True, zerolinecolor="gray"),
+            zaxis=dict(backgroundcolor="rgb(0, 0, 0)", gridcolor="gray", showbackground=True, zerolinecolor="gray"),
+        ),
+        paper_bgcolor="#0d0d0d", 
+        height=700, 
+        margin=dict(l=0,r=0,b=0,t=0)
     )
     st.plotly_chart(fig, use_container_width=True)
     
@@ -218,7 +237,11 @@ elif selected_tab == "🧪 Lab Utilities":
         - **Rule 2**: Golden Operator $O_n$ modulation
         - **Rule 3**: Code implements Theory
         """)
-        st.image("h7_ionic_diagnostic.png", caption="Last Physical Diagnostic")
+        image_path = root_path / "h7_ionic_diagnostic.png"
+        if image_path.exists():
+            st.image(str(image_path), caption="Last Physical Diagnostic")
+        else:
+            st.info("No physical diagnostic image found yet.")
 
 st.divider()
 st.caption(f"H7 Unified Hub | Local Time: {time.strftime('%H:%M:%S')} | PHI Coherence: {PHI:.4f}")
