@@ -17,7 +17,7 @@ root_path = Path(__file__).parent.parent.absolute()
 if str(root_path) not in sys.path:
     sys.path.append(str(root_path))
 
-from nodes_network import HierarchicalNode, Node
+from dashboard.nodes_network import HierarchicalNode, Node
 
 # Constantes del Mandato
 PHI = (1 + np.sqrt(5)) / 2
