@@ -44,6 +44,35 @@ cuántica (Qiskit) para optimizar el control en tiempo real de estimulación neu
 
 ---
 
+## El Papel de Qiskit en el Proyecto CL1
+
+Qiskit juega un papel crucial en el proyecto CL1 de Cortical Labs al proporcionar una plataforma para la simulación cuántica y el desarrollo de algoritmos que optimizan el control de la estimulación neuronal en tiempo real. A continuación se detallan algunos aspectos clave de su uso:
+
+### Funciones de Qiskit
+
+1. **Simulación Cuántica**:
+   - Qiskit permite la simulación de procesos cuánticos que son relevantes para el funcionamiento del sistema neuronal, como la optimización de algoritmos de estimulación y el análisis de simetrías ocultas en los datos neuronales.
+
+2. **Desarrollo de Algoritmos**:
+   - Se utilizan algoritmos cuánticos, como el algoritmo de Simon (para descubrir la simetría $s=7$), para resolver problemas complejos relacionados con la estimulación neuronal y la lógica bayesiana, mejorando así la precisión y eficiencia del sistema.
+
+3. **Integración con Hardware Biológico**:
+   - La capacidad de Qiskit para modelar procesos que interactúan con el hardware biológico (MEA de 64 electrodos) permite un control más preciso y adaptativo de la estimulación neuronal, facilitando experimentos en tiempo real que combinan computación de inspiración cuántica y biológica.
+
+4. **Análisis de Datos**:
+   - Qiskit y sus herramientas subyacentes se utilizan para modelar el espacio de estados y el procesamiento de ruido cuántico/informacional en los datos generados por el sistema, permitiendo afinar las respuestas neuronales a diferentes estímulos a través del Oráculo Metriplex.
+
+### Impacto en el Proyecto
+
+El uso de Qiskit no solo afina y mejora la eficiencia del sistema métrico-simpléctico CL1, sino que también abre nuevas posibilidades en la investigación sobre cómo las neuronas procesan información, lo que podría tener aplicaciones directas en la nueva frontera de la inteligencia artificial fundamentada en "Wetware". Esto representa un avance significativo en la intersección de la computación cuántica y la biología, proporcionando un enfoque innovador para el estudio y la manipulación de sistemas neuronales vivos (organoides).
+
+Para más información sobre el hardware subyacente CL1 y Cortical Labs, puedes consultar las siguientes fuentes:
+- [Cortical Labs - CL1](https://corticallabs.com/cl1)
+- [Tom's Hardware sobre CL1](https://www.tomshardware.com/tech-industry/artificial-intelligence/human-brain-cells-set-to-power-two-new-data-centers-thanks-to-body-in-the-box-cl1-cortical-labs-targets-the-ai-energy-crisis-with-biological-computer-that-reportedly-uses-less-energy-than-a-calculator)
+- [Reuters sobre el CL1](https://www.youtube.com/watch?v=3KeC8gxopio)
+
+---
+
 ## Estructura del Proyecto (Modular)
 
 El proyecto se divide en dos módulos principales para coherencia física y operativa:
