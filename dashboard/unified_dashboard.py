@@ -19,7 +19,7 @@ if str(root_path) not in sys.path:
 
 from dashboard.cl1_db import CL1Reader
 from dashboard.nodes_network import Node, HierarchicalNode
-from dashboard.brain_topology import generate_brain_topology
+from smopsys.brain_topology import generate_brain_topology
 from dashboard.quoremind_monitor import QuoreMindMonitor
 
 # ─── Page Config ───────────────────────────────────────────────────────────────

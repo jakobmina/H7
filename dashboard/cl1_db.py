@@ -73,6 +73,7 @@ class CL1Database:
             conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
             conn.row_factory = sqlite3.Row
             self._local.conn = conn
+            self._local.tick_buffer = []  # Initialize tick buffer per thread
         return self._local.conn
 
     def _init_db(self):
@@ -84,6 +85,7 @@ class CL1Database:
     def new_session(self, ticks_per_second: int, run_for_seconds: int):
         """Registra metadatos de la sesión actual."""
         conn = self._get_conn()
+        self._local.tick_buffer = [] # Reset buffer
         conn.execute("DELETE FROM ticks")
         conn.execute("DELETE FROM h7_events")
         conn.execute("""
@@ -104,14 +106,10 @@ class CL1Database:
         stim_dur_us: int,
         stim_amp_ua: float,
     ):
-        """Inserta un tick. Operación rápida (<50µs) para no bloquear el loop."""
+        """Añade un tick al buffer. Escribe a disco en lotes para máxima velocidad."""
         conn = self._get_conn()
-        conn.execute("""
-            INSERT INTO ticks
-              (ts_ns, loop_dur_us, spike_count, stim_fired,
-               prob_bottleneck, l_symp, l_metr, stim_dur_us, stim_amp_ua)
-            VALUES (?,?,?,?,?,?,?,?,?)
-        """, (
+        
+        self._local.tick_buffer.append((
             ts_ns,
             loop_dur_us,
             spike_count,
@@ -122,7 +120,25 @@ class CL1Database:
             stim_dur_us,
             stim_amp_ua,
         ))
+        
+        # Flush if buffer reaches limit
+        if len(self._local.tick_buffer) >= 100:
+            self._flush_ticks()
+
+    def _flush_ticks(self):
+        """Escribe todos los ticks en el buffer a SQLite de golpe."""
+        if not hasattr(self._local, "tick_buffer") or not self._local.tick_buffer:
+            return
+            
+        conn = self._get_conn()
+        conn.executemany("""
+            INSERT INTO ticks
+              (ts_ns, loop_dur_us, spike_count, stim_fired,
+               prob_bottleneck, l_symp, l_metr, stim_dur_us, stim_amp_ua)
+            VALUES (?,?,?,?,?,?,?,?,?)
+        """, self._local.tick_buffer)
         conn.commit()
+        self._local.tick_buffer.clear()
 
     def write_h7_event(self, event_type: str, description: str = "", value: float = 0.0):
         """Registra un evento H7 (bottleneck detectado, corrección aplicada, etc.)."""
@@ -135,6 +151,7 @@ class CL1Database:
 
     def finalize_session(self, skipped_stims: int, total_spikes: int):
         """Marca la sesión como completada."""
+        self._flush_ticks()
         conn = self._get_conn()
         conn.execute("""
             INSERT OR REPLACE INTO session_meta(key, value) VALUES

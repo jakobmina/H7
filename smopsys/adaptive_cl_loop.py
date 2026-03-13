@@ -24,8 +24,8 @@ if str(root_path) not in sys.path:
 from dashboard.cl1_db import CL1Database
 import time
 import numpy as np
-import mpmath
-from quoremindhp import BayesLogicHP, BayesLogicConfigHP, StatisticalAnalysisHP
+import math
+from smopsys.quoremind_lite import BayesLogicLite, BayesLogicConfigLite, StatisticalAnalysisLite
 
 RUN_FOR_SECONDS  = 30
 TICKS_PER_SECOND = 1000
@@ -33,27 +33,27 @@ RUN_FOR_TICKS    = RUN_FOR_SECONDS * TICKS_PER_SECOND
 PERCENTILES      = [0.001, 0.01, 0.1, 1, 99, 99.9, 99.99, 99.999]
 
 # ─── Constante metripléctica ───────────────────────────────────────────────────
-PHI = mpmath.mpf((1 + mpmath.sqrt(5)) / 2)
+PHI = (1 + math.sqrt(5)) / 2
 
 
 class H7AdaptiveController:
     """
     H7 Algorithm — Marco de decisión adaptativa para CL.
 
-    Usa BayesLogicHP (API real) para calcular P(bottleneck | loop_duration).
+    Usa BayesLogicLite para calcular P(bottleneck | loop_duration).
 
     d_symp: Estimulación nominal conservativa
     d_metr: Reducción de complejidad para liberar carga cuando p_bottleneck > umbral
     """
 
     def __init__(self):
-        config = BayesLogicConfigHP(
-            epsilon=mpmath.mpf("1e-15"),
-            high_entropy_threshold=mpmath.mpf("0.8"),
-            high_coherence_threshold=mpmath.mpf("0.6"),
-            action_threshold=mpmath.mpf("0.5"),
+        config = BayesLogicConfigLite(
+            epsilon=1e-15,
+            high_entropy_threshold=0.8,
+            high_coherence_threshold=0.6,
+            action_threshold=0.5,
         )
-        self.bayes = BayesLogicHP(config)
+        self.bayes = BayesLogicLite(config)
 
         # Acumuladores para análisis estadístico
         self._loop_durations: list = []
@@ -74,8 +74,8 @@ class H7AdaptiveController:
         L_metr = -max(0.0, loop_duration_us - target_us)  # negativo si hay jitter
         return L_symp, L_metr
 
-    # ── Análisis con BayesLogicHP (API correcta) ───────────────────────────────
-    def analyze_tick(self, loop_duration_us: float, spike_count: int) -> mpmath.mpf:
+    # ── Análisis con BayesLogicLite ───────────────────────────────
+    def analyze_tick(self, loop_duration_us: float, spike_count: int) -> float:
         """
         Usa calculate_posterior_probability(prior_a, prior_b, conditional_b_given_a)
         para estimar P(bottleneck | loop supera 1500µs).
@@ -91,7 +91,7 @@ class H7AdaptiveController:
         BOTTLENECK_THRESHOLD_US = 1_500.0
 
         # prior_a: P(bottleneck) base
-        prior_a = mpmath.mpf("0.10")
+        prior_a = 0.10
 
         # prior_b: si la media reciente sube, aumentamos la evidencia de congestión
         if len(self._loop_durations) > 10:
@@ -99,13 +99,12 @@ class H7AdaptiveController:
             coherence = min(1.0, recent_mean / BOTTLENECK_THRESHOLD_US)
         else:
             coherence = 0.3
-        prior_b = mpmath.mpf(str(coherence))
+        prior_b = float(coherence)
 
         # conditional_b_given_a: P(excede umbral | bottleneck real) = alta si este tick tardó mucho
-        cond_b_given_a = mpmath.mpf("0.95") if loop_duration_us > BOTTLENECK_THRESHOLD_US \
-                         else mpmath.mpf("0.05")
+        cond_b_given_a = 0.95 if loop_duration_us > BOTTLENECK_THRESHOLD_US else 0.05
 
-        # ← API CORRECTA de BayesLogicHP
+        # ← API CORRECTA de BayesLogicLite
         prob_bottleneck = self.bayes.calculate_posterior_probability(
             prior_a        = prior_a,
             prior_b        = prior_b,
@@ -114,7 +113,7 @@ class H7AdaptiveController:
         return prob_bottleneck
 
     # ── Decisión H7 ────────────────────────────────────────────────────────────
-    def decide(self, prob_bottleneck: mpmath.mpf) -> str:
+    def decide(self, prob_bottleneck: float) -> str:
         """
         Regla H7: si P(bottleneck) > 0.80 → componente métrica activa (d_metr).
         De lo contrario, el sistema permanece en régimen conservativo (d_symp).
@@ -131,13 +130,13 @@ class H7AdaptiveController:
             return "increase_precision"
         return "maintain"
 
-    # ── Estadísticas Finales (API correcta StatisticalAnalysisHP) ──────────────
+    # ── Estadísticas Finales (API Lite StatisticalAnalysisLite) ──────────────
     def final_stats(self):
         """Retorna entropía de Shannon y estadísticas de los intervalos del loop."""
         if not self._loop_durations:
             return {}
         durations = self._loop_durations
-        entropy = StatisticalAnalysisHP.shannon_entropy(
+        entropy = StatisticalAnalysisLite.shannon_entropy(
             [round(d / 100) for d in durations]   # discretizar para entropía simbólica
         )
         return {
