@@ -18,23 +18,23 @@ cuántica (Qiskit) para optimizar el control en tiempo real de estimulación neu
 │   d_symp = O_n(i) = cos(πi)·cos(πφi)  [conservativo]       │
 │   d_metr = [u, S] (Ionic Emulation Na+/K+) [disipativo]    │
 └──────────────┬──────────────────────────┬───────────────────┘
-               │                          │
-               ▼                          ▼
+│                          │
+▼                          ▼
 ┌──────────────────────┐    ┌─────────────────────────────────┐
 │   Red Metripléctica   │    │   MetriplexOracle + H7          │
 │   (nodes_network.py)  │    │   (h7_quantum_oracle.py)        │
 │   Box-in-Box Nesting  │    │   Qiskit · Simon's Algorithm    │
 │   Neuron Layers       │    │   s=7 hidden symmetry           │
 └──────────────┬───────┘    └─────────────────────────────────┐
-               │
-               ▼
+│
+▼
 ┌──────────────────────┐    ┌─────────────────────────────────┐
 │   QuoreMindHP        │    │      Lab Analysis (H7)          │
 │   BayesLogicHP       │    │   h7_phi_experiment.py          │
 │   50-digit precision │    │   h5_to_json.py Utility         │
 └──────────────┬───────┘    └────────────────┬────────────────┘
-               │                             │
-               ▼                             ▼
+│                             │
+▼                             ▼
 ┌─────────────────────────────────────────────────────────────┐
 │        Dashboards (dashboard/streamlit_monitor.py)          │
 │   1. Real-Time Monitor: Spikes · Lagrangian · H7 Events      │
@@ -51,22 +51,27 @@ Qiskit juega un papel crucial en el proyecto CL1 de Cortical Labs al proporciona
 ### Funciones de Qiskit
 
 1. **Simulación Cuántica**:
-   - Qiskit permite la simulación de procesos cuánticos que son relevantes para el funcionamiento del sistema neuronal, como la optimización de algoritmos de estimulación y el análisis de simetrías ocultas en los datos neuronales.
 
-2. **Desarrollo de Algoritmos**:
-   - Se utilizan algoritmos cuánticos, como el algoritmo de Simon (para descubrir la simetría $s=7$), para resolver problemas complejos relacionados con la estimulación neuronal y la lógica bayesiana, mejorando así la precisión y eficiencia del sistema.
+- Qiskit permite la simulación de procesos cuánticos que son relevantes para el funcionamiento del sistema neuronal, como la optimización de algoritmos de estimulación y el análisis de simetrías ocultas en los datos neuronales.
 
-3. **Integración con Hardware Biológico**:
-   - La capacidad de Qiskit para modelar procesos que interactúan con el hardware biológico (MEA de 64 electrodos) permite un control más preciso y adaptativo de la estimulación neuronal, facilitando experimentos en tiempo real que combinan computación de inspiración cuántica y biológica.
+1. **Desarrollo de Algoritmos**:
 
-4. **Análisis de Datos**:
-   - Qiskit y sus herramientas subyacentes se utilizan para modelar el espacio de estados y el procesamiento de ruido cuántico/informacional en los datos generados por el sistema, permitiendo afinar las respuestas neuronales a diferentes estímulos a través del Oráculo Metriplex.
+- Se utilizan algoritmos cuánticos, como el algoritmo de Simon (para descubrir la simetría $s=7$), para resolver problemas complejos relacionados con la estimulación neuronal y la lógica bayesiana, mejorando así la precisión y eficiencia del sistema.
+
+1. **Integración con Hardware Biológico**:
+
+- La capacidad de Qiskit para modelar procesos que interactúan con el hardware biológico (MEA de 64 electrodos) permite un control más preciso y adaptativo de la estimulación neuronal, facilitando experimentos en tiempo real que combinan computación de inspiración cuántica y biológica.
+
+1. **Análisis de Datos**:
+
+- Qiskit y sus herramientas subyacentes se utilizan para modelar el espacio de estados y el procesamiento de ruido cuántico/informacional en los datos generados por el sistema, permitiendo afinar las respuestas neuronales a diferentes estímulos a través del Oráculo Metriplex.
 
 ### Impacto en el Proyecto
 
 El uso de Qiskit no solo afina y mejora la eficiencia del sistema métrico-simpléctico CL1, sino que también abre nuevas posibilidades en la investigación sobre cómo las neuronas procesan información, lo que podría tener aplicaciones directas en la nueva frontera de la inteligencia artificial fundamentada en "Wetware". Esto representa un avance significativo en la intersección de la computación cuántica y la biología, proporcionando un enfoque innovador para el estudio y la manipulación de sistemas neuronales vivos (organoides).
 
 Para más información sobre el hardware subyacente CL1 y Cortical Labs, puedes consultar las siguientes fuentes:
+
 - [Cortical Labs - CL1](https://corticallabs.com/cl1)
 - [Tom's Hardware sobre CL1](https://www.tomshardware.com/tech-industry/artificial-intelligence/human-brain-cells-set-to-power-two-new-data-centers-thanks-to-body-in-the-box-cl1-cortical-labs-targets-the-ai-energy-crisis-with-biological-computer-that-reportedly-uses-less-energy-than-a-calculator)
 - [Reuters sobre el CL1](https://www.youtube.com/watch?v=3KeC8gxopio)
@@ -78,6 +83,7 @@ Para más información sobre el hardware subyacente CL1 y Cortical Labs, puedes 
 El proyecto se divide en dos módulos principales para coherencia física y operativa:
 
 ### 🧪 `smopsys/` (Core Physics & Experiments)
+
 - **`h7_phi_experiment.py`**: Experimento de estímulo modulado por $\phi$ con emulación iónica Na+/K+.
 - **`brain_topology.py`**: Generador de topología cerebral modular (Box-in-Box) alineado con $O_n$.
 - **`nodes_network.py`**: Motor de red metripléptica jerárquica.
@@ -85,11 +91,13 @@ El proyecto se divide en dos módulos principales para coherencia física y oper
 - **`adaptive_cl_loop.py`**: Bucle de control adaptativo CL1.
 
 ### 📊 `dashboard/` (Monitoring & Utilities)
+
 - **`streamlit_monitor.py`**: Consola de mando central con visualización de Lagrangianos.
 - **`cl1_db.py`**: Interfaz de base de datos para lectura/escritura en tiempo real.
 - **`h5_to_json.py`**: Utilidad de exportación de datos preservando metadatos $O_n$.
 
 ### 📂 `records/` & `tests/`
+
 - **`records/`**: Grabaciones `.h5`, sesiones `.sqlite` y diagnósticos `.png`.
 - **`tests/`**: Suite completa de `pytest` para validación de lógica física y topológica.
 
@@ -104,7 +112,9 @@ streamlit run dashboard/streamlit_monitor.py
 # Ejecutar tests de integridad
 pytest tests/
 ```
+
 alización volumétrica en tiempo real:
+
 - **Topología de Lóbulos**: Distribución de clusters en un elipsoide prolate.
 - **Level of Detail (LOD)**: Navegación jerárquica desde la red global (Nivel 0) hasta grupos funcionales (Nivel 1) y nodos locales (Nivel 2).
 
