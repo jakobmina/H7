@@ -20,7 +20,6 @@ if str(root_path) not in sys.path:
 from dashboard.cl1_db import CL1Reader
 from dashboard.nodes_network import Node, HierarchicalNode
 from smopsys.brain_topology import generate_brain_topology
-from dashboard.quoremind_monitor import QuoreMindMonitor
 
 # ─── Page Config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -37,6 +36,40 @@ DIT_CYAN   = "#00f2ff"
 DIT_GREEN  = "#00ff41"
 DIT_RED    = "#ff3e3e"
 DIT_ORANGE = "#f39c12"
+
+THRESHOLD = 2.0
+
+class QuoreMindMonitor:
+    """Monitor de estabilidad de fase integrado."""
+    def __init__(self):
+        self.accumulator = 0.0
+        self.history = []
+        self.outliers = []
+        self.stability_index = 100.0
+        self.corrections = 0
+
+    def compute_lagrangian(self, i):
+        L_symp = np.cos(np.pi * i) * np.cos(np.pi * PHI * i)
+        L_metr = -abs(self.accumulator) * (DRIFT_072 / THRESHOLD)
+        return L_symp, L_metr
+
+    def simulate_cycle(self, i):
+        # i starts from 1, so i is safely > 0. But just in case:
+        safe_i = max(1, i)
+        L_symp, _ = self.compute_lagrangian(safe_i)
+        
+        innovation = L_symp
+        self.accumulator += innovation + np.random.normal(0, 0.05)
+        is_outlier = abs(self.accumulator) > THRESHOLD
+
+        if is_outlier or (safe_i % 7 == 0):
+            self.accumulator *= (DRIFT_072 / THRESHOLD)
+            self.corrections += 1
+            if is_outlier:
+                self.outliers.append((safe_i, self.accumulator))
+
+        self.history.append(self.accumulator)
+        self.stability_index = 100 * (1 - (len(self.outliers) / safe_i))
 
 # ─── Custom CSS ────────────────────────────────────────────────────────────────
 st.markdown(f"""
