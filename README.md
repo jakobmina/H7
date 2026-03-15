@@ -50,21 +50,13 @@ Qiskit juega un papel crucial en el proyecto CL1 de Cortical Labs al proporciona
 
 ### Funciones de Qiskit
 
-1. **Simulación Cuántica**:
+1. **Simulación Cuántica**: Qiskit permite la simulación de procesos cuánticos que son relevantes para el funcionamiento del sistema neuronal, como la optimización de algoritmos de estimulación y el análisis de simetrías ocultas en los datos neuronales.
 
-- Qiskit permite la simulación de procesos cuánticos que son relevantes para el funcionamiento del sistema neuronal, como la optimización de algoritmos de estimulación y el análisis de simetrías ocultas en los datos neuronales.
+1. **Desarrollo de Algoritmos**: Se utilizan algoritmos cuánticos, como el algoritmo de Simon (para descubrir la simetría $s=7$), para resolver problemas complejos relacionados con la estimulación neuronal y la lógica bayesiana, mejorando así la precisión y eficiencia del sistema.
 
-1. **Desarrollo de Algoritmos**:
+1. **Integración con Hardware Biológico**: La capacidad de Qiskit para modelar procesos que interactúan con el hardware biológico (MEA de 64 electrodos) permite un control más preciso y adaptativo de la estimulación neuronal, facilitando experimentos en tiempo real que combinan computación de inspiración cuántica y biológica.
 
-- Se utilizan algoritmos cuánticos, como el algoritmo de Simon (para descubrir la simetría $s=7$), para resolver problemas complejos relacionados con la estimulación neuronal y la lógica bayesiana, mejorando así la precisión y eficiencia del sistema.
-
-1. **Integración con Hardware Biológico**:
-
-- La capacidad de Qiskit para modelar procesos que interactúan con el hardware biológico (MEA de 64 electrodos) permite un control más preciso y adaptativo de la estimulación neuronal, facilitando experimentos en tiempo real que combinan computación de inspiración cuántica y biológica.
-
-1. **Análisis de Datos**:
-
-- Qiskit y sus herramientas subyacentes se utilizan para modelar el espacio de estados y el procesamiento de ruido cuántico/informacional en los datos generados por el sistema, permitiendo afinar las respuestas neuronales a diferentes estímulos a través del Oráculo Metriplex.
+1. **Análisis de Datos**: Qiskit y sus herramientas subyacentes se utilizan para modelar el espacio de estados y el procesamiento de ruido cuántico/informacional en los datos generados por el sistema, permitiendo afinar las respuestas neuronales a diferentes estímulos a través del Oráculo Metriplex.
 
 ### Impacto en el Proyecto
 

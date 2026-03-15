@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import "./App.css";
+import NeuronNet from "./NeuronNet.jsx";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const API = "http://localhost:8000/api/h7";
@@ -271,7 +272,7 @@ export default function App() {
 
       {/* ── Tabs ── */}
       <div style={{display:"flex",gap:"8px",marginBottom:"16px"}}>
-        {[["matrix","H7 Matrix"],["oracle","Metriplex Oracle"]].map(([v,l])=>(
+        {[["matrix","H7 Matrix"],["oracle","Metriplex Oracle"],["network","🧠 Neuron Network"]].map(([v,l])=>(
           <button key={v} onClick={()=>setTab(v)} style={{
             padding:"5px 14px",borderRadius:"6px",border:"1px solid",fontSize:"12px",cursor:"pointer",
             background: tab===v?"#1f6feb":"#161b22",
@@ -374,6 +375,9 @@ export default function App() {
 
       {/* ── Oracle tab ── */}
       {tab === "oracle" && <OraclePanel oracle={oracleData}/>}
+
+      {/* ── Network tab ── */}
+      {tab === "network" && <NeuronNet />}
 
       <div style={{marginTop:"12px",color:"#484f58",fontSize:"10px"}}>
         {live
