@@ -96,7 +96,7 @@ with st.sidebar:
     st.markdown("**QuoreMindHP + H7 Loop**")
     st.divider()
     
-    selected_tab = st.radio("Navigate to:", ["📊 Neural Monitor", "🕸️ 3D Topology", "⚡ Engine Status", "🧪 Lab Utilities"])
+    selected_tab = st.radio("Navigate to:", ["📊 Neural Monitor", "🕸️ 3D Topology", "🧬 Parallel Evolution", "⚡ Engine Status", "🧪 Lab Utilities"])
     
     st.divider()
     st.header("🎛️ Node Control")
@@ -220,6 +220,79 @@ elif selected_tab == "🕸️ 3D Topology":
     if st.button("♻️ Regenerate Topology"):
         st.session_state.brain = generate_brain_topology(n_clusters=12, neurons_per_cluster=30)
         st.rerun()
+
+elif selected_tab == "🧬 Parallel Evolution":
+    st.header("🧬 Parallel Evolution & Soft Handover")
+    st.markdown("Monitor the convergence of parallel H7 instances and their transition to hardware autonomy.")
+    
+    # --- Background Launcher ---
+    col1, col2 = st.columns([1, 3])
+    with col1:
+        if st.button("🚀 Launch Parallel Starts"):
+            st.info("Evolutions starting in background...")
+            subprocess.Popen([sys.executable, "smopsys/parallel_evolution.py"], env={**os.environ, "PYTHONPATH": "."})
+            st.toast("Processes Spawned: Baseline, Synergy, Disruption, Reflexive")
+            time.sleep(1)
+            st.rerun()
+            
+    # --- Data Polling Logic ---
+    def load_instance_metrics(inst_id):
+        path = f"records/instance_{inst_id}_metrics.jsonl"
+        if not os.path.exists(path): return None
+        data = []
+        with open(path, "r") as f:
+            for line in f:
+                try: data.append(json.loads(line))
+                except: pass
+        return pd.DataFrame(data)
+
+    st.divider()
+    
+    # Tabs for different views
+    view_mode = st.tabs(["Stability Matrix", "Alpha Blending", "Handover Status"])
+    
+    all_data = {i: load_instance_metrics(i) for i in range(4)}
+    labels = {0: "Baseline", 1: "Synergistic", 2: "Disruptive", 3: "Reflexive"}
+    
+    with view_mode[1]:
+        st.subheader("Sim-to-Hardware Blending Ratio (\u03b1)")
+        fig = go.Figure()
+        for i, df in all_data.items():
+            if df is not None and not df.empty:
+                fig.add_trace(go.Scatter(x=df["tick"], y=df["alpha"], name=labels[i], mode='lines'))
+        fig.update_layout(template="plotly_dark", height=400, xaxis_title="Tick", yaxis_title="Alpha")
+        st.plotly_chart(fig, use_container_width=True)
+
+    with view_mode[2]:
+        st.subheader("Handover Real-Time Status")
+        cols = st.columns(4)
+        for i in range(4):
+            with cols[i]:
+                st.markdown(f"**{labels[i]}**")
+                df = all_data[i]
+                if df is not None and not df.empty:
+                    last = df.iloc[-1]
+                    status = last["status"]
+                    color = "#00f2ff" if "BLENDING" in status else ("#00ff41" if "AUTONOMOUS" in status else "#888")
+                    st.markdown(f"<p style='color:{color}; font-weight:bold;'>{status}</p>", unsafe_allow_html=True)
+                    st.metric("Current Alpha", f"{last['alpha']:.2f}")
+                else:
+                    st.caption("Waiting for data...")
+
+    with view_mode[0]:
+        st.subheader("Precision Convergence (Energy Efficiency)")
+        fig = go.Figure()
+        for i, df in all_data.items():
+            if df is not None and not df.empty:
+                # Rolling precision to show trend
+                df['prec_smooth'] = df['precision'].rolling(window=20).mean()
+                fig.add_trace(go.Scatter(x=df["tick"], y=df['prec_smooth'], name=labels[i]))
+        fig.update_layout(template="plotly_dark", height=400, xaxis_title="Tick", yaxis_title="Precision")
+        st.plotly_chart(fig, use_container_width=True)
+
+    # Auto-refresh
+    time.sleep(2)
+    st.rerun()
 
 elif selected_tab == "⚡ Engine Status":
     st.header("⚡ QuoreMind Engine Integrity")

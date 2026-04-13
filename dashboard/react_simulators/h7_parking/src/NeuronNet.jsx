@@ -4,8 +4,10 @@
  * Synaptic edges link neurons within the same MetriplexOracle collision group.
  * Pulls data from /api/h7/network every 15 seconds.
  */
-import { useRef, useState, useEffect, useMemo } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+/* eslint-disable react/no-unknown-property */
+import { useRef, useState, useEffect, useMemo, useCallback } from "react";
+import PropTypes from "prop-types";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Html } from "@react-three/drei";
 import * as THREE from "three";
 
@@ -29,7 +31,7 @@ function Neuron({ node, onClick, selected }) {
   const emissive = STATE_EMISSIVE[node.label] || "#000000";
 
   // Pulse animation for constructive neurons
-  useFrame((_, delta) => {
+  useFrame(() => {
     if (!meshRef.current) return;
     if (node.label === "constructive") {
       const t = Date.now() * 0.002 + node.id * 0.4;
@@ -65,6 +67,18 @@ function Neuron({ node, onClick, selected }) {
   );
 }
 
+Neuron.propTypes = {
+  node: PropTypes.shape({
+    id: PropTypes.number.isRequired,
+    x: PropTypes.number.isRequired,
+    y: PropTypes.number.isRequired,
+    z: PropTypes.number.isRequired,
+    label: PropTypes.string,
+  }).isRequired,
+  onClick: PropTypes.func.isRequired,
+  selected: PropTypes.bool,
+};
+
 // ── Synaptic edge (line between two neurons) ──────────────────────────────────
 function SynapticEdge({ src, dst, type }) {
   const points = useMemo(() => [
@@ -86,6 +100,20 @@ function SynapticEdge({ src, dst, type }) {
     </line>
   );
 }
+
+SynapticEdge.propTypes = {
+  src: PropTypes.shape({
+    x: PropTypes.number.isRequired,
+    y: PropTypes.number.isRequired,
+    z: PropTypes.number.isRequired,
+  }).isRequired,
+  dst: PropTypes.shape({
+    x: PropTypes.number.isRequired,
+    y: PropTypes.number.isRequired,
+    z: PropTypes.number.isRequired,
+  }).isRequired,
+  type: PropTypes.string,
+};
 
 // ── Info tooltip for selected neuron ──────────────────────────────────────────
 function NeuronTooltip({ node }) {
@@ -112,14 +140,38 @@ function NeuronTooltip({ node }) {
   );
 }
 
+NeuronTooltip.propTypes = {
+  node: PropTypes.shape({
+    x: PropTypes.number.isRequired,
+    y: PropTypes.number.isRequired,
+    z: PropTypes.number.isRequired,
+    id: PropTypes.number.isRequired,
+    n: PropTypes.number.isRequired,
+    group: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    psi: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    L_symp: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    L_metr: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    label: PropTypes.string,
+  }),
+};
+
 // ── Scene ─────────────────────────────────────────────────────────────────────
 function Scene({ data, selected, onSelect }) {
   const nodeMap = useMemo(() => {
-    if (!data) return {};
+    if (!data || !data.nodes) return {};
     return Object.fromEntries(data.nodes.map(n => [n.id, n]));
   }, [data]);
 
-  if (!data) return null;
+  if (!data || !data.nodes) {
+    return (
+      <Html center>
+        <div style={{color: "#8b949e", fontSize: "12px", background: "#0d1117aa", padding: "10px", borderRadius: "8px"}}>
+          No network data available
+        </div>
+      </Html>
+    );
+  }
+
 
   return (
     <>
@@ -152,6 +204,15 @@ function Scene({ data, selected, onSelect }) {
   );
 }
 
+Scene.propTypes = {
+  data: PropTypes.shape({
+    nodes: PropTypes.arrayOf(PropTypes.object).isRequired,
+    edges: PropTypes.arrayOf(PropTypes.object).isRequired,
+  }),
+  selected: PropTypes.object,
+  onSelect: PropTypes.func.isRequired,
+};
+
 // ── Main exported component ───────────────────────────────────────────────────
 export default function NeuronNet() {
   const [data,     setData]     = useState(null);
@@ -159,24 +220,43 @@ export default function NeuronNet() {
   const [loading,  setLoading]  = useState(true);
   const [nCount,   setNCount]   = useState(88);
   const [live,     setLive]     = useState(false);
+  const [recordings, setRecordings] = useState([]);
+  const [source,     setSource]     = useState(""); // empty = synthetic
 
-  async function fetchNetwork(n = nCount) {
+  const fetchRecordings = useCallback(async () => {
+    try {
+      const r = await fetch(`http://localhost:8000/api/h7/recordings`);
+      if (r.ok) {
+        const d = await r.json();
+        setRecordings(d.files || []);
+      }
+    } catch (e) { console.error("Failed to fetch recordings", e); }
+  }, []);
+
+  const fetchNetwork = useCallback(async (n = nCount, src = source) => {
     setLoading(true);
     try {
-      const r = await fetch(`http://localhost:8000/api/h7/network?n_neurons=${n}`,
-        {signal: AbortSignal.timeout(4000)});
+      const url = `http://localhost:8000/api/h7/network?n_neurons=${n}${src ? `&source=${src}` : ""}`;
+      const r = await fetch(url, {signal: AbortSignal.timeout(6000)});
+
       if (!r.ok) throw new Error();
       setData(await r.json());
       setLive(true);
     } catch { setLive(false); }
     setLoading(false);
-  }
+  }, [nCount, source]);
+
 
   useEffect(() => {
-    fetchNetwork(nCount);
-    const id = setInterval(() => fetchNetwork(nCount), 15000);
-    return () => clearInterval(id);
-  }, [nCount]);
+    fetchRecordings();
+    fetchNetwork(nCount, source);
+    // Auto-refresh only for simulation, not for static recordings
+    if (!source) {
+      const id = setInterval(() => fetchNetwork(nCount, source), 15000);
+      return () => clearInterval(id);
+    }
+  }, [nCount, source, fetchNetwork, fetchRecordings]);
+
 
   const counts = data?.summary || {};
 
@@ -197,6 +277,23 @@ export default function NeuronNet() {
           padding:"4px 12px",borderRadius:"6px",border:"1px solid #30363d",
           fontSize:"11px",cursor:"pointer",background:"#161b22",color:"#8b949e"
         }}>↻ Refresh</button>
+
+        <div style={{display:"flex", alignItems:"center", gap:"8px", background:"#161b22", padding:"2px 8px", borderRadius:"6px", border:"1px solid #30363d"}}>
+          <span style={{fontSize:"11px", color:"#8b949e"}}>Data Source:</span>
+          <select 
+            value={source} 
+            onChange={(e) => setSource(e.target.value)}
+            style={{
+              background:"transparent", color:"#c9d1d9", border:"none", fontSize:"11px", outline:"none", cursor:"pointer"
+            }}
+          >
+            <option value="" style={{background:"#0d1117"}}>✨ Live Simulation</option>
+            {recordings.map(f => (
+              <option key={f} value={f} style={{background:"#0d1117"}}>📁 {f}</option>
+            ))}
+          </select>
+        </div>
+
 
         <span style={{marginLeft:"auto",display:"flex",gap:"6px"}}>
           {Object.entries(counts).map(([lbl, cnt]) => (
